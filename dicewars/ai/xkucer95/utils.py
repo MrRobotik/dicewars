@@ -88,23 +88,23 @@ def possible_attacks(board: Board, player_name):
 
 
 class Attack:
-    def __init__(self, source: Area, target: Area, conquer: bool):
+    def __init__(self, source: Area, target: Area, succ: bool):
         self.source = source
         self.target = target
         self.source_dice = source.get_dice()
         self.source_owner = source.get_owner_name()
         self.target_dice = target.get_dice()
         self.target_owner = target.get_owner_name()
-        self.conquer = conquer
+        self.succ = succ
 
     def __enter__(self):
         self.source.set_dice(1)
-        if self.conquer:
+        if self.succ:
             self.target.set_dice(self.source_dice - 1)
             self.target.set_owner(self.source_owner)
 
     def __exit__(self, *args):
         self.source.set_dice(self.source_dice)
-        if self.conquer:
+        if self.succ:
             self.target.set_dice(self.target_dice)
             self.target.set_owner(self.target_owner)
