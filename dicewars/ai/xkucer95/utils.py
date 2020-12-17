@@ -1,5 +1,6 @@
 from dicewars.client.game.board import Board
 from dicewars.client.game.board import Area
+import numpy as np
 
 ATTACK_SUCC_PROBS = {
     2: {
@@ -79,12 +80,46 @@ def possible_attacks(board: Board, player_name):
     for source in board.get_player_border(player_name):
         if not source.can_attack():
             continue
-        neighbours = source.get_adjacent_areas()
-        for adj in neighbours:
+        for adj in source.get_adjacent_areas():
             target = board.get_area(adj)
             if target.get_owner_name() != player_name:
                 prob = ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
                 yield source, target, prob
+
+
+def attack_descriptor(board: Board, source: Area, target: Area):
+    player_name = source.get_owner_name()
+    prob = ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
+    source_power = 0
+    target_power = 0
+    with Attack(source, target, True):
+        for adj in source.get_adjacent_areas():
+            area = board.get_area(adj)
+            if area.get_owner_name() == player_name:
+                source_power += area.get_dice()
+            else:
+                source_power -= area.get_dice()
+        for adj in target.get_adjacent_areas():
+            area = board.get_area(adj)
+            if area.get_owner_name() == player_name:
+                target_power += area.get_dice()
+            else:
+                target_power -= area.get_dice()
+        regions = board.get_players_regions(player_name)
+    best = max(map(lambda x: len(x), regions))
+    region_size = None
+    for region in regions:
+        if source.get_name() in region:
+            region_size = len(region)
+            break
+    feature_vector = [
+        prob,
+        source_power,
+        target_power,
+        region_size,
+        region_size == best
+    ]
+    return np.asarray(feature_vector)
 
 
 class Attack:

@@ -1,5 +1,4 @@
 import logging
-import numpy as np
 from .utils import *
 
 from .expectimax_n import expectimax_n
@@ -16,10 +15,15 @@ class AI:
         self.policy_model = PolicyModel()
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
+        attacks = []
         for source, target, prob in possible_attacks(board, self.player_name):
             if source.get_dice() < target.get_dice():
                 continue
+            attacks.append((source, target, prob))
 
+        for source, target, _ in attacks:
+            x = attack_descriptor(board, source, target)
+            print(x)
 
         return EndTurnCommand()
 
