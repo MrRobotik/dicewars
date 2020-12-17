@@ -76,20 +76,20 @@ ATTACK_SUCC_PROBS = {
 }
 
 
-def possible_attacks(board: Board, player_name):
+def possible_attacks(board: Board, player_name: int):
     for source in board.get_player_border(player_name):
         if not source.can_attack():
             continue
         for adj in source.get_adjacent_areas():
             target = board.get_area(adj)
             if target.get_owner_name() != player_name:
-                prob = ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
-                yield source, target, prob
+                succ_prob = ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
+                yield source, target, succ_prob
 
 
-def attack_descriptor(board: Board, source: Area, target: Area):
+def make_attack_descriptor(board: Board, source: Area, target: Area):
     player_name = source.get_owner_name()
-    prob = ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
+    succ_prob = ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
     source_power = 0
     target_power = 0
     with Attack(source, target, True):
@@ -106,20 +106,26 @@ def attack_descriptor(board: Board, source: Area, target: Area):
             else:
                 target_power -= area.get_dice()
         regions = board.get_players_regions(player_name)
-    best = max(map(lambda x: len(x), regions))
+    best_region_size = max(map(lambda x: len(x), regions))
     region_size = None
     for region in regions:
         if source.get_name() in region:
             region_size = len(region)
             break
+    best_region_bit = (region_size == best_region_size)
     feature_vector = [
-        prob,
+        succ_prob,
+        best_region_bit,
         source_power,
         target_power,
         region_size,
-        region_size == best
     ]
     return np.asarray(feature_vector)
+
+
+def standardize_data(x: np.ndarray, axis: int):
+    eps = np.finfo(x.dtype).eps.item()
+    return (x - np.mean(x, axis=axis)) / (np.std(x, axis=axis) + eps)
 
 
 class Attack:

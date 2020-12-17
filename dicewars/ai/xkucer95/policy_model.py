@@ -9,21 +9,24 @@ class PolicyModel(torch.nn.Module):
         self.affine1 = torch.nn.Linear(5, 5, True)
         self.affine2 = torch.nn.Linear(5, 1, True)
         # self.dropout = torch.nn.Dropout(0.2, False)
-        self.buffer = []
-        self.log_prob = None
+        self.log_probs_buff = []
 
     def forward(self, x):
         y = self.affine1(x)
-        y = self.affine1(torch.nn.functional.relu(y))
-        self.buffer.append(y)
+        y = torch.nn.functional.sigmoid(y)
+        y = self.affine2(y)
+        return y
 
-    def sample_action(self, backward=False):
-        y = torch.stack(tuple(self.buffer))
+    def forward_all(self, x):
+        for i in range(x.shape[0]):
+            yield self(torch.from_numpy(x[i, :]))
+
+    def choose_action(self, x):
+        y = torch.cat(tuple(self.forward_all(x)))
         probs = torch.nn.functional.softmax(y)
         m = torch.distributions.Categorical(probs)
         action = m.sample()
-        self.log_prob = m.log_prob(action)
-        self.buffer.clear()
+        self.log_probs_buff.append(m.log_prob(action))
         return action
 
     def backward(self, reward):
