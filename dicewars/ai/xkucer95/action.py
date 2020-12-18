@@ -7,7 +7,10 @@ class Action:
         self.stack = []
         self.succ_prob = 1.
 
-    def attack(self, source: Area, target: Area, succ_prob: float, succ_flag: bool):
+    def __del__(self):
+        self.rollback()
+
+    def add_attack(self, source: Area, target: Area, succ_prob: float, succ_flag: bool):
         s_dice, s_owner = source.get_dice(), source.get_owner_name()
         t_dice, t_owner = target.get_dice(), target.get_owner_name()
         self.stack.append((source, s_dice, s_owner, target, t_dice, t_owner, succ_flag))

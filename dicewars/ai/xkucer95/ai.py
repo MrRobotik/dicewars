@@ -5,6 +5,7 @@ from os import path
 from .utils import *
 from .expectimax_n import expectimax_n
 from .policy_model import PolicyModel
+from .action import Action
 
 from dicewars.client.ai_driver import BattleCommand, EndTurnCommand
 
@@ -34,8 +35,15 @@ class AI:
         attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
         if len(attacks) == 0:
             return EndTurnCommand()
-        # data = np.stack((state_descriptor(board, self.player_name, self.players_order)), axis=0)
-        source, target, _ = attacks[0]
+        data_in = []
+        for s, t, p in attacks:
+            action = Action(board)
+            action.add_attack(s, t, p, True)
+            x = state_descriptor(board, self.player_name, self.players_order)
+            data_in.append(np.concatenate((np.asarray([p]), x)))
+            action.rollback()
+        a_idx = self.policy_model.select_action(data_in)
+        source, target, _ = attacks[a_idx]
         return BattleCommand(source.get_name(), target.get_name())
 
     def reward(self, reward):

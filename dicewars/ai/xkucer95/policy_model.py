@@ -21,12 +21,12 @@ class PolicyModel(torch.nn.Module):
         y = self.affine2(y)
         return y
 
-    def forward_all(self, x):
-        for i in range(x.shape[0]):
-            yield self(torch.from_numpy(x[i, :].astype(np.float32)))
+    def forward_all(self, data_in):
+        for x in data_in:
+            yield self(torch.from_numpy(x.astype(np.float32)))
 
-    def select_action(self, x):
-        y = torch.cat(tuple(self.forward_all(x)))
+    def select_action(self, data_in):
+        y = torch.cat(tuple(self.forward_all(data_in)))
         probs = torch.nn.functional.softmax(y)
         m = torch.distributions.Categorical(probs)
         action = m.sample()
