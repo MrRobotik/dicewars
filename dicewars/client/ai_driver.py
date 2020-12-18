@@ -64,7 +64,6 @@ class AIDriver:
             # For xkucer95 AI policy training
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                 self.xkucer95_score = self.game.players[self.game.current_player_name].get_score()
-                self.xkucer95_reserve = self.game.players[self.game.current_player_name].get_reserve()
         except TimeoutError:
             self.logger.error("The AI failed to construct itself in {}s. Disabling it.".format(TIME_LIMIT_CONSTRUCTOR))
             self.ai_disabled = True
@@ -171,14 +170,15 @@ class AIDriver:
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                 if self.player_name == self.game.current_player_name:
                     curr_score = self.game.players[self.game.current_player_name].get_score()
-                    curr_reserve = self.game.players[self.game.current_player_name].get_reserve()
-                    reward = (curr_score - self.xkucer95_score) + (curr_reserve - self.xkucer95_reserve)
+                    diff = (curr_score - self.xkucer95_score)
                     try:
-                        self.ai.reward(numpy.tanh(0.1 * reward))
+                        if diff >= 0:
+                            self.ai.reward(+1.0)
+                        else:
+                            self.ai.reward(-1.0)
                     except Exception as e:
                         pass
                     self.xkucer95_score = curr_score
-                    self.xkucer95_reserve = curr_reserve
 
             self.game.players[self.game.current_player_name].activate()
             self.waitingForResponse = False

@@ -87,40 +87,39 @@ def possible_attacks(board: Board, player_name: int):
                 yield source, target, succ_prob
 
 
-def make_attack_descriptor(board: Board, source: Area, target: Area):
-    player_name = source.get_owner_name()
-    succ_prob = ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
-    source_supp = 0
-    target_supp = 0
-    with Attack(source, target, True):
-        for adj in source.get_adjacent_areas():
-            area = board.get_area(adj)
-            if area.get_owner_name() == player_name:
-                source_supp += area.get_dice()
-            else:
-                source_supp -= area.get_dice()
-        for adj in target.get_adjacent_areas():
-            area = board.get_area(adj)
-            if area.get_owner_name() == player_name:
-                target_supp += area.get_dice()
-            else:
-                target_supp -= area.get_dice()
-        regions = board.get_players_regions(player_name)
-    best_region_size = max(map(lambda x: len(x), regions))
-    region_size = None
-    for region in regions:
-        if source.get_name() in region:
-            region_size = len(region)
-            break
-    best_region_bit = (region_size == best_region_size)
+def state_descriptor(board: Board, player_name: int, players_order: list):
+    regions = board.get_players_regions(player_name)
+    border = board.get_player_border(player_name)
+    max_region_size = max([len(x) for x in regions])
+    rel_border_size = len(border) / sum(len(board.get_player_border(x)) for x in players_order)
+    total_dice = sum(a.get_dice() for a in board.get_player_areas(player_name))
+
+    border_neigh = set()
+    for area in border:
+        border_neigh.add(area)
+        for adj in area.get_adjacent_areas():
+            border_neigh.add(board.get_area(adj))
+
+    border_player_dice = 0
+    border_others_dice = 0
+    for area in border_neigh:
+        if area.get_owner_name() == player_name:
+            border_player_dice += area.get_dice()
+        else:
+            border_others_dice += area.get_dice()
+    
     feature_vector = [
-        succ_prob,
-        best_region_bit,
-        source_supp,
-        target_supp,
-        region_size,
+        max_region_size,
+        rel_border_size,
+        total_dice,
+        border_player_dice,
+        border_others_dice,
     ]
     return np.asarray(feature_vector)
+
+
+def action_descriptor():
+    pass
 
 
 def standardize_data(x: np.ndarray, axis: int):

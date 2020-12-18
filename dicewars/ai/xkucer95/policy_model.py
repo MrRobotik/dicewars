@@ -1,26 +1,29 @@
 import torch.nn
 import torch.nn.functional
 import torch.distributions
+import numpy as np
 
 
 class PolicyModel(torch.nn.Module):
     def __init__(self, train_online):
         super().__init__()
-        self.affine1 = torch.nn.Linear(5, 5, True)
-        self.affine2 = torch.nn.Linear(5, 1, True)
-        self.log_probs_buff = []
+        self.affine1 = torch.nn.Linear(5, 32, True)
+        self.affine2 = torch.nn.Linear(32, 1, True)
+        self.dropout = torch.nn.Dropout(0.2)
+        self.probs_buff = []
         self.train(train_online)
         self.train_online = train_online
 
     def forward(self, x):
         y = self.affine1(x)
-        y = torch.nn.functional.sigmoid(y)
+        y = self.dropout(y)
+        y = torch.nn.functional.relu(y)
         y = self.affine2(y)
         return y
 
     def forward_all(self, x):
         for i in range(x.shape[0]):
-            yield self(torch.from_numpy(x[i, :]))
+            yield self(torch.from_numpy(x[i, :].astype(np.float32)))
 
     def select_action(self, x):
         y = torch.cat(tuple(self.forward_all(x)))
@@ -28,10 +31,20 @@ class PolicyModel(torch.nn.Module):
         m = torch.distributions.Categorical(probs)
         action = m.sample()
         if self.train_online:
-            self.log_probs_buff.append(m.log_prob(action))
+            self.probs_buff.append(probs[action])
         return action
 
     def calc_grads(self, reward):
-        loss = sum(-log_prob * reward for log_prob in self.log_probs_buff)
+        if reward >= 0.:
+            probs = (p for p in self.probs_buff)
+        else:
+            probs = (1. - p for p in self.probs_buff)
+        eps = np.finfo(np.float32).eps.item()
+        probs = (p + eps if p == 0. else p for p in probs)
+        loss = sum(-torch.log(p) * abs(reward) for p in probs)
         loss.backward()
-        self.log_probs_buff.clear()
+        self.probs_buff.clear()
+
+        loss_output = open('/home/adam/Documents/dicewars/dicewars/ai/xkucer95/models/loss.csv', 'a')
+        loss_output.write(str(float(loss)) + '\n')
+        loss_output.close()

@@ -24,6 +24,7 @@ class AI:
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         if self.policy_model.train_online:
+            state = state_descriptor(board, self.player_name, self.players_order)
             return self.ai_turn_policy_only(board)
         else:
             return EndTurnCommand()
@@ -33,14 +34,16 @@ class AI:
         attacks = list(filter(lambda x: x[0].get_dice() >= x[1].get_dice(), attacks))
         if len(attacks) == 0:
             return EndTurnCommand()
-        data = np.stack((make_attack_descriptor(board, s, t) for s, t, _ in attacks), axis=0)
-        data[:, 2:] = standardize_data(data[:, 2:], axis=0)
-        action = self.policy_model.select_action(data.astype(np.float32))
-        source, target, _ = attacks[action]
+        # data = np.stack((make_attack_descriptor(board, s, t) for s, t, _ in attacks), axis=0)
+        # data[:, 2:] = standardize_data(data[:, 2:], axis=0)
+        # action = self.policy_model.select_action(data)
+        # source, target, _ = attacks[action]
+        source, target, _ = attacks[0]
         return BattleCommand(source.get_name(), target.get_name())
+        return EndTurnCommand()
 
     def reward(self, reward):
-        if self.policy_model.log_probs_buff:
+        if self.policy_model.probs_buff:
             self.optimizer.zero_grad()
             self.policy_model.calc_grads(reward)
             self.optimizer.step()
