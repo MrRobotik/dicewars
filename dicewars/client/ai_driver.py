@@ -4,6 +4,9 @@ from json.decoder import JSONDecodeError
 import logging
 import signal
 
+# For xkucer95 AI policy training
+import torch, numpy
+
 from .timers import FischerTimer, FixedTimer
 
 
@@ -58,7 +61,7 @@ class AIDriver:
             players_order_copy = copy.deepcopy(self.game.players_order)
             with FixedTimer(TIME_LIMIT_CONSTRUCTOR):
                 self.ai = ai_constructor(self.player_name, board_copy, players_order_copy)
-            # Code for xkucer95 AI policy training
+            # For xkucer95 AI policy training
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                 self.xkucer95_score = self.game.players[self.game.current_player_name].get_score()
                 self.xkucer95_reserve = self.game.players[self.game.current_player_name].get_reserve()
@@ -142,6 +145,10 @@ class AIDriver:
                 defender.set_owner(atk_data['owner'])
                 self.game.players[atk_name].set_score(msg['score'][str(atk_name)])
                 self.game.players[def_name].set_score(msg['score'][str(def_name)])
+                # For xkucer95 AI policy training
+                if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
+                    if msg['score'][str(def_name)] == 0 and self.player_name == msg['score'][str(def_name)]:
+                        self.ai.reward(-1.0)  # DIED
 
             self.waitingForResponse = False
 
@@ -160,15 +167,18 @@ class AIDriver:
             self.game.current_player_name = msg['current_player']
             self.game.current_player = self.game.players[msg['current_player']]
 
-            # Code for xkucer95 AI policy training
-            if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>' \
-                    and self.player_name == self.game.current_player_name:
-                curr_score = self.game.players[self.game.current_player_name].get_score()
-                curr_reserve = self.game.players[self.game.current_player_name].get_reserve()
-                r = (curr_score - self.xkucer95_score) + (curr_reserve - self.xkucer95_reserve)
-                self.ai.reward(r)
-                self.xkucer95_score = curr_score
-                self.xkucer95_reserve = curr_reserve
+            # For xkucer95 AI policy training
+            if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
+                if self.player_name == self.game.current_player_name:
+                    curr_score = self.game.players[self.game.current_player_name].get_score()
+                    curr_reserve = self.game.players[self.game.current_player_name].get_reserve()
+                    reward = (curr_score - self.xkucer95_score) + (curr_reserve - self.xkucer95_reserve)
+                    try:
+                        self.ai.reward(numpy.tanh(0.1 * reward))
+                    except Exception as e:
+                        pass
+                    self.xkucer95_score = curr_score
+                    self.xkucer95_reserve = curr_reserve
 
             self.game.players[self.game.current_player_name].activate()
             self.waitingForResponse = False
@@ -176,6 +186,11 @@ class AIDriver:
         elif msg['type'] == 'game_end':
             self.logger.info("Player {} has won".format(msg['winner']))
             self.game.socket.close()
+            # For xkucer95 AI policy training
+            if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
+                if self.player_name == msg['winner']:
+                    self.ai.reward(+1.0)  # WON
+                torch.save(self.ai.policy_model.state_dict(), self.ai.policy_model_path)
             return False
 
         return True
