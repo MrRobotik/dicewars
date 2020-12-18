@@ -147,7 +147,7 @@ class AIDriver:
                 self.game.players[def_name].set_score(msg['score'][str(def_name)])
                 # For xkucer95 AI policy training
                 if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
-                    if msg['score'][str(def_name)] == 0 and self.player_name == msg['score'][str(def_name)]:
+                    if self.game.players[def_name].get_score() == 0 and self.player_name == def_name:
                         self.ai.reward(-1.0)  # DIED
 
             self.waitingForResponse = False
