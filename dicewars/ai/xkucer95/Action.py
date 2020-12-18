@@ -8,22 +8,22 @@ class Action:
         self.succ_prob = 1.
 
     def attack(self, source: Area, target: Area, succ_prob: float, succ_flag: bool):
-        s = (source, source.get_dice(), source.get_owner_name())
-        t = (target, target.get_dice(), target.get_owner_name())
-        self.stack.append((s, t, succ_flag))
-        s[0].set_dice(1)
+        s_dice, s_owner = source.get_dice(), source.get_owner_name()
+        t_dice, t_owner = target.get_dice(), target.get_owner_name()
+        self.stack.append((source, s_dice, s_owner, target, t_dice, t_owner, succ_flag))
+        source.set_dice(1)
         if succ_flag:
             self.succ_prob *= succ_prob
-            t[0].set_dice(s[1] - 1)
-            t[0].set_owner(s[2])
+            target.set_dice(s_dice - 1)
+            target.set_owner(s_owner)
         else:
             self.succ_prob *= 1. - succ_prob
 
     def rollback(self):
         while self.stack:
-            s, t, succ_flag = self.stack.pop()
-            s[0].set_dice(s[1])
+            source, s_dice, s_owner, target, t_dice, t_owner, succ_flag = self.stack.pop()
+            source.set_dice(s_dice)
             if succ_flag:
-                t[0].set_dice(t[1])
-                t[0].set_owner(t[2])
+                target.set_dice(t_dice)
+                target.set_owner(t_owner)
         self.succ_prob = 1.
