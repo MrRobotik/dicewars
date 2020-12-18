@@ -9,6 +9,8 @@ from .action import Action
 
 from dicewars.client.ai_driver import BattleCommand, EndTurnCommand
 
+import traceback
+
 
 class AI:
     def __init__(self, player_name, board, players_order, train_online=True):
@@ -25,8 +27,12 @@ class AI:
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         if self.policy_model.train_online:
-            state = state_descriptor(board, self.player_name, self.players_order)
-            return self.ai_turn_policy_only(board)
+            try:
+                return self.ai_turn_policy_only(board)
+            except:
+                print('lol')
+                track = traceback.format_exc()
+                print(track)
         else:
             return EndTurnCommand()
 
@@ -36,14 +42,19 @@ class AI:
         if len(attacks) == 0:
             return EndTurnCommand()
         data_in = []
-        for s, t, p in attacks:
+        x = state_descriptor(board, self.player_name, self.players_order)
+        data_in.append(np.concatenate((np.asarray([1.]), x)))
+        for source, target, succ_prob in attacks:
             action = Action(board)
-            action.add_attack(s, t, p, True)
+            action.add_attack(source, target, succ_prob, True)
+            if board.nb_players_alive() == 1:
+                return BattleCommand(source.get_name(), target.get_name())
             x = state_descriptor(board, self.player_name, self.players_order)
-            data_in.append(np.concatenate((np.asarray([p]), x)))
-            action.rollback()
-        a_idx = self.policy_model.select_action(data_in)
-        source, target, _ = attacks[a_idx]
+            data_in.append(np.concatenate((np.asarray([succ_prob]), x)))
+        action_id = self.policy_model.select_action(data_in)
+        if action_id == 0:
+            return EndTurnCommand()
+        source, target, _ = attacks[action_id - 1]
         return BattleCommand(source.get_name(), target.get_name())
 
     def reward(self, reward):

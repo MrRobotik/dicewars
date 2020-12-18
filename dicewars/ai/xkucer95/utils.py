@@ -91,7 +91,7 @@ def state_descriptor(board: Board, player_name: int, players_order: list):
     regions = board.get_players_regions(player_name)
     border = board.get_player_border(player_name)
     max_region_size = max([len(x) for x in regions])
-    rel_border_size = len(border) / sum(len(board.get_player_border(x)) for x in players_order)
+    rel_border_size = len(border) / sum(len(board.get_player_border(name)) for name in players_order)
     total_dice = sum(a.get_dice() for a in board.get_player_areas(player_name))
 
     border_neigh = set()

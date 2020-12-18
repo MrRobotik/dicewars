@@ -177,6 +177,7 @@ class AIDriver:
                         else:
                             self.ai.reward(-1.0)
                     except Exception as e:
+                        print(e)
                         pass
                     self.xkucer95_score = curr_score
 
