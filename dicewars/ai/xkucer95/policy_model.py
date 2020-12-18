@@ -7,7 +7,7 @@ import numpy as np
 class PolicyModel(torch.nn.Module):
     def __init__(self, train_online):
         super().__init__()
-        self.affine1 = torch.nn.Linear(5, 32, True)
+        self.affine1 = torch.nn.Linear(6, 32, True)
         self.affine2 = torch.nn.Linear(32, 1, True)
         self.dropout = torch.nn.Dropout(0.2)
         self.probs_buff = []

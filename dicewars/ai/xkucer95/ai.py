@@ -31,16 +31,12 @@ class AI:
 
     def ai_turn_policy_only(self, board):
         attacks = possible_attacks(board, self.player_name)
-        attacks = list(filter(lambda x: x[0].get_dice() >= x[1].get_dice(), attacks))
+        attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
         if len(attacks) == 0:
             return EndTurnCommand()
-        # data = np.stack((make_attack_descriptor(board, s, t) for s, t, _ in attacks), axis=0)
-        # data[:, 2:] = standardize_data(data[:, 2:], axis=0)
-        # action = self.policy_model.select_action(data)
-        # source, target, _ = attacks[action]
+        # data = np.stack((state_descriptor(board, self.player_name, self.players_order)), axis=0)
         source, target, _ = attacks[0]
         return BattleCommand(source.get_name(), target.get_name())
-        return EndTurnCommand()
 
     def reward(self, reward):
         if self.policy_model.probs_buff:

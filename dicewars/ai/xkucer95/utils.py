@@ -96,18 +96,18 @@ def state_descriptor(board: Board, player_name: int, players_order: list):
 
     border_neigh = set()
     for area in border:
-        border_neigh.add(area)
+        border_neigh.add(area.get_name())
         for adj in area.get_adjacent_areas():
-            border_neigh.add(board.get_area(adj))
+            border_neigh.add(adj)
 
     border_player_dice = 0
     border_others_dice = 0
-    for area in border_neigh:
+    for area in map(lambda a: board.get_area(a), border_neigh):
         if area.get_owner_name() == player_name:
             border_player_dice += area.get_dice()
         else:
             border_others_dice += area.get_dice()
-    
+
     feature_vector = [
         max_region_size,
         rel_border_size,
@@ -118,33 +118,6 @@ def state_descriptor(board: Board, player_name: int, players_order: list):
     return np.asarray(feature_vector)
 
 
-def action_descriptor():
-    pass
-
-
 def standardize_data(x: np.ndarray, axis: int):
     eps = np.finfo(x.dtype).eps.item()
     return (x - np.mean(x, axis=axis)) / (np.std(x, axis=axis) + eps)
-
-
-class Attack:
-    def __init__(self, source: Area, target: Area, succ: bool):
-        self.source = source
-        self.target = target
-        self.source_dice = source.get_dice()
-        self.source_owner = source.get_owner_name()
-        self.target_dice = target.get_dice()
-        self.target_owner = target.get_owner_name()
-        self.succ = succ
-
-    def __enter__(self):
-        self.source.set_dice(1)
-        if self.succ:
-            self.target.set_dice(self.source_dice - 1)
-            self.target.set_owner(self.source_owner)
-
-    def __exit__(self, *args):
-        self.source.set_dice(self.source_dice)
-        if self.succ:
-            self.target.set_dice(self.target_dice)
-            self.target.set_owner(self.target_owner)
