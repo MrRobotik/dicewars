@@ -90,21 +90,21 @@ def possible_attacks(board: Board, player_name: int):
 def make_attack_descriptor(board: Board, source: Area, target: Area):
     player_name = source.get_owner_name()
     succ_prob = ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
-    source_power = 0
-    target_power = 0
+    source_supp = 0
+    target_supp = 0
     with Attack(source, target, True):
         for adj in source.get_adjacent_areas():
             area = board.get_area(adj)
             if area.get_owner_name() == player_name:
-                source_power += area.get_dice()
+                source_supp += area.get_dice()
             else:
-                source_power -= area.get_dice()
+                source_supp -= area.get_dice()
         for adj in target.get_adjacent_areas():
             area = board.get_area(adj)
             if area.get_owner_name() == player_name:
-                target_power += area.get_dice()
+                target_supp += area.get_dice()
             else:
-                target_power -= area.get_dice()
+                target_supp -= area.get_dice()
         regions = board.get_players_regions(player_name)
     best_region_size = max(map(lambda x: len(x), regions))
     region_size = None
@@ -116,8 +116,8 @@ def make_attack_descriptor(board: Board, source: Area, target: Area):
     feature_vector = [
         succ_prob,
         best_region_bit,
-        source_power,
-        target_power,
+        source_supp,
+        target_supp,
         region_size,
     ]
     return np.asarray(feature_vector)

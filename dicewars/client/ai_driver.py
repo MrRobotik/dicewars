@@ -58,6 +58,10 @@ class AIDriver:
             players_order_copy = copy.deepcopy(self.game.players_order)
             with FixedTimer(TIME_LIMIT_CONSTRUCTOR):
                 self.ai = ai_constructor(self.player_name, board_copy, players_order_copy)
+            # Code for xkucer95 AI policy training
+            if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
+                self.xkucer95_score = self.game.players[self.game.current_player_name].get_score()
+                self.xkucer95_reserve = self.game.players[self.game.current_player_name].get_reserve()
         except TimeoutError:
             self.logger.error("The AI failed to construct itself in {}s. Disabling it.".format(TIME_LIMIT_CONSTRUCTOR))
             self.ai_disabled = True
@@ -155,6 +159,17 @@ class AIDriver:
             current_player.deactivate()
             self.game.current_player_name = msg['current_player']
             self.game.current_player = self.game.players[msg['current_player']]
+
+            # Code for xkucer95 AI policy training
+            if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>' \
+                    and self.player_name == self.game.current_player_name:
+                curr_score = self.game.players[self.game.current_player_name].get_score()
+                curr_reserve = self.game.players[self.game.current_player_name].get_reserve()
+                r = curr_score - self.xkucer95_score
+                self.ai.reward(r)
+                self.xkucer95_score = curr_score
+                self.xkucer95_reserve = curr_reserve
+
             self.game.players[self.game.current_player_name].activate()
             self.waitingForResponse = False
 

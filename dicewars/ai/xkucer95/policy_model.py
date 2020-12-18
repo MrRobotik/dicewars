@@ -21,7 +21,7 @@ class PolicyModel(torch.nn.Module):
         for i in range(x.shape[0]):
             yield self(torch.from_numpy(x[i, :]))
 
-    def choose_action(self, x):
+    def select_action(self, x):
         y = torch.cat(tuple(self.forward_all(x)))
         probs = torch.nn.functional.softmax(y)
         m = torch.distributions.Categorical(probs)
@@ -29,6 +29,7 @@ class PolicyModel(torch.nn.Module):
         self.log_probs_buff.append(m.log_prob(action))
         return action
 
-    def backward(self, reward):
-        loss = -self.log_prob * reward
+    def calc_grads(self, reward):
+        loss = sum(-log_prob * reward for log_prob in self.log_probs_buff)
         loss.backward()
+        self.log_probs_buff.clear()
