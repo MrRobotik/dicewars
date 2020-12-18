@@ -22,15 +22,10 @@ class AI:
             self.policy_model.load_state_dict(torch.load(self.policy_model_path))
         # self.optimizer = torch.optim.Adam(self.policy_model.parameters(), lr=0.01)
         # torch.save(self.policy_model.state_dict(), self.policy_model_path)
-        print(players_order)
-        print('player_name', player_name)
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         if self.train_online:
-            try:
-                return self.ai_turn_policy_only(board)
-            except Exception as e:
-                print(e)
+            return self.ai_turn_policy_only(board)
         else:
             return EndTurnCommand()
 
@@ -46,7 +41,7 @@ class AI:
         return BattleCommand(source.get_name(), target.get_name())
 
     def reward(self, r):
-        print('reward', r)
+        r = np.tanh(0.1 * r)
 
     # def best_attacks(self, board, turn):
     #     attacks = possible_attacks(board, self.players_order[turn])

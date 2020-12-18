@@ -8,7 +8,6 @@ class PolicyModel(torch.nn.Module):
         super().__init__()
         self.affine1 = torch.nn.Linear(5, 5, True)
         self.affine2 = torch.nn.Linear(5, 1, True)
-        # self.dropout = torch.nn.Dropout(0.2, False)
         self.log_probs_buff = []
 
     def forward(self, x):

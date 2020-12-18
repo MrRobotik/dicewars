@@ -165,7 +165,7 @@ class AIDriver:
                     and self.player_name == self.game.current_player_name:
                 curr_score = self.game.players[self.game.current_player_name].get_score()
                 curr_reserve = self.game.players[self.game.current_player_name].get_reserve()
-                r = curr_score - self.xkucer95_score
+                r = (curr_score - self.xkucer95_score) + (curr_reserve - self.xkucer95_reserve)
                 self.ai.reward(r)
                 self.xkucer95_score = curr_score
                 self.xkucer95_reserve = curr_reserve
