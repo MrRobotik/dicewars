@@ -14,7 +14,7 @@ import traceback  # TODO: remove after debug
 
 
 class AI:
-    def __init__(self, player_name, board, players_order, on_policy=True):
+    def __init__(self, player_name, board, players_order, on_policy=False):
         self.player_name = player_name
         self.players_order = players_order
         self.logger = logging.getLogger('AI')
@@ -25,15 +25,13 @@ class AI:
             self.policy_model.load_state_dict(torch.load(self.policy_model_path))
         if on_policy:
             self.optimizer = torch.optim.Adam(self.policy_model.parameters(), lr=0.001)
+            self.batch_size = 32
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
-        if self.policy_model.on_policy:
-            try:
-                return self.ai_turn_on_policy(board)
-            except:
-                print(traceback.format_exc())
-        else:
-            return EndTurnCommand()
+        try:
+            return self.ai_turn_on_policy(board)
+        except:
+            print(traceback.format_exc())
 
     def ai_turn_on_policy(self, board):
         attacks = possible_attacks(board, self.player_name)
@@ -61,7 +59,9 @@ class AI:
         return BattleCommand(source.get_name(), target.get_name())
 
     def reward_for_turn(self, reward, game_over=False):
-        if len(self.policy_model.probs_buff) > 0:
-            self.optimizer.zero_grad()
-            self.policy_model.calc_grads(reward)
-            self.optimizer.step()
+        if self.policy_model.on_policy:
+            self.policy_model.reward_for_turn(reward)
+            if len(self.policy_model.train_buff_1) >= self.batch_size or game_over:
+                self.optimizer.zero_grad()
+                self.policy_model.backward()
+                self.optimizer.step()
