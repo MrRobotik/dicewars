@@ -52,6 +52,6 @@ class PolicyModel(torch.nn.Module):
         loss.backward()
         self.probs_buff.clear()
 
-        loss_output = open('/home/adam/Documents/dicewars/dicewars/ai/xkucer95/models/loss.csv', 'a')
+        loss_output = open('dicewars/ai/xkucer95/models/loss.csv', 'a')
         loss_output.write('{} {}\n'.format(float(loss), reward))
         loss_output.close()
