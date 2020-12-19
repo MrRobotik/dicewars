@@ -24,7 +24,7 @@ class AI:
         if path.exists(self.policy_model_path):
             self.policy_model.load_state_dict(torch.load(self.policy_model_path))
         if on_policy:
-            self.optimizer = torch.optim.Adam(self.policy_model.parameters(), lr=0.01)
+            self.optimizer = torch.optim.Adam(self.policy_model.parameters(), lr=0.001)
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         if self.policy_model.on_policy:
@@ -60,8 +60,8 @@ class AI:
         source, target, _ = attacks[action]
         return BattleCommand(source.get_name(), target.get_name())
 
-    def update_policy(self, reward):
-        if self.policy_model.probs_buff:
+    def reward_for_turn(self, reward, game_over=False):
+        if len(self.policy_model.probs_buff) > 0:
             self.optimizer.zero_grad()
             self.policy_model.calc_grads(reward)
             self.optimizer.step()

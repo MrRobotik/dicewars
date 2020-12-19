@@ -16,7 +16,7 @@ class PolicyModel(torch.nn.Module):
 
     def forward(self, x):
         a = self.affine1(x)
-        # a = self.dropout(a)
+        a = self.dropout(a)
         a = f.relu(a)
         a = self.affine2(a)
         y = f.softmax(a)
@@ -46,9 +46,10 @@ class PolicyModel(torch.nn.Module):
             probs = (p for p in self.probs_buff)
         else:
             probs = (1. - p for p in self.probs_buff)
+        reward = abs(reward) / len(self.probs_buff)
         eps = np.finfo(np.float32).eps.item()
         probs = (p + eps if p == 0. else p for p in probs)
-        loss = sum(-torch.log(p) * abs(reward) for p in probs)
+        loss = sum(-torch.log(p) * reward for p in probs)
         loss.backward()
         self.probs_buff.clear()
 

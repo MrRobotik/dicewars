@@ -145,9 +145,9 @@ class AIDriver:
                 self.game.players[atk_name].set_score(msg['score'][str(atk_name)])
                 self.game.players[def_name].set_score(msg['score'][str(def_name)])
                 # For xkucer95 AI policy training
-                if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
-                    if self.game.players[def_name].get_score() == 0 and self.player_name == def_name:
-                        self.ai.update_policy(-1.0)  # DIED
+                # if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
+                #     if self.game.players[def_name].get_score() == 0 and self.player_name == def_name:
+                #         self.ai.reward_for_turn(-1.0)  # DIED
 
             self.waitingForResponse = False
 
@@ -173,9 +173,9 @@ class AIDriver:
                     diff = (curr_score - self.xkucer95_score)
                     try:
                         if diff >= 0:
-                            self.ai.update_policy(+1.0)
+                            self.ai.reward_for_turn(+1.0)
                         else:
-                            self.ai.update_policy(-1.0)
+                            self.ai.reward_for_turn(-1.0)
                     except Exception as e:
                         print(e)
                         pass
@@ -190,8 +190,8 @@ class AIDriver:
             # For xkucer95 AI policy training
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                 if self.player_name == msg['winner']:
-                    self.ai.update_policy(+1.0)  # WON
-                torch.save(self.ai.policy_model.state_dict(), self.ai.policy_model_path)
+                    self.ai.reward_for_turn(+1.0, True)  # WON
+                    torch.save(self.ai.policy_model.state_dict(), self.ai.policy_model_path)
             return False
 
         return True
