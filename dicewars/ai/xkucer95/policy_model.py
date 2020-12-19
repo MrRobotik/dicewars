@@ -1,40 +1,47 @@
 import torch.nn
-import torch.nn.functional
+import torch.nn.functional as f
 import torch.distributions
 import numpy as np
 
 
 class PolicyModel(torch.nn.Module):
-    def __init__(self, train_online):
+    def __init__(self, on_policy: bool):
         super().__init__()
-        self.affine1 = torch.nn.Linear(6, 32, True)
-        self.affine2 = torch.nn.Linear(32, 1, True)
+        self.affine1 = torch.nn.Linear(12, 24, True)
+        self.affine2 = torch.nn.Linear(24,  2, True)
         self.dropout = torch.nn.Dropout(0.2)
         self.probs_buff = []
-        self.train(train_online)
-        self.train_online = train_online
+        self.train(on_policy)
+        self.on_policy = on_policy
 
     def forward(self, x):
-        y = self.affine1(x)
-        y = self.dropout(y)
-        y = torch.nn.functional.relu(y)
-        y = self.affine2(y)
+        a = self.affine1(x)
+        # a = self.dropout(a)
+        a = f.relu(a)
+        a = self.affine2(a)
+        y = f.softmax(a)
         return y
 
-    def forward_all(self, data_in):
+    def select_action(self, data_in: np.ndarray):
+        attacks, probs = [], []
         for x in data_in:
-            yield self(torch.from_numpy(x.astype(np.float32)))
+            y = self(torch.from_numpy(x.astype(np.float32)))
+            if self.on_policy:
+                m = torch.distributions.Categorical(y)
+                action = int(m.sample())
+            else:
+                action = int(np.argmax(y))
+            if action == 1:
+                attacks.append(action)
+                probs.append(y[action])
+        if len(attacks) == 0:
+            return None
+        best_attack = int(np.argmax(probs))
+        prob = probs[best_attack]
+        self.probs_buff.append(prob)
+        return best_attack
 
-    def select_action(self, data_in):
-        y = torch.cat(tuple(self.forward_all(data_in)))
-        probs = torch.nn.functional.softmax(y)
-        m = torch.distributions.Categorical(probs)
-        action = m.sample()
-        if self.train_online:
-            self.probs_buff.append(probs[action])
-        return action
-
-    def calc_grads(self, reward):
+    def calc_grads(self, reward: float):
         if reward >= 0.:
             probs = (p for p in self.probs_buff)
         else:
@@ -46,5 +53,5 @@ class PolicyModel(torch.nn.Module):
         self.probs_buff.clear()
 
         loss_output = open('/home/adam/Documents/dicewars/dicewars/ai/xkucer95/models/loss.csv', 'a')
-        loss_output.write(str(float(loss)) + '\n')
+        loss_output.write('{} {}\n'.format(float(loss), reward))
         loss_output.close()

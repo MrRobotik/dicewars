@@ -118,6 +118,6 @@ def state_descriptor(board: Board, player_name: int, players_order: list):
     return np.asarray(feature_vector)
 
 
-def standardize_data(x: np.ndarray, axis: int):
+def standardize_data(x: np.ndarray, axis=0):
     eps = np.finfo(x.dtype).eps.item()
     return (x - np.mean(x, axis=axis)) / (np.std(x, axis=axis) + eps)
