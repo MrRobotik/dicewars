@@ -91,9 +91,9 @@ def state_descriptor(board: Board, player_name: int, players: list):
     areas = board.get_player_areas(player_name)
     regions = board.get_players_regions(player_name)
     border = board.get_player_border(player_name)
-    max_region_size = max([len(x) for x in regions])
+    max_region_size = max(len(r) for r in regions)
     rel_border_size_1 = len(border) / sum(len(board.get_player_border(name)) for name in players)
-    rel_border_size_2 = len(border) / sum(a.get_dice() for a in areas)
+    rel_border_size_2 = sum(a.get_dice() for a in border) / sum(a.get_dice() for a in areas)
 
     best_border = []
     for r in regions:
@@ -124,13 +124,14 @@ def state_descriptor(board: Board, player_name: int, players: list):
         neigh_dice_dist.append(player_power / total_power)
 
     feature_vector = [
-        max_region_size / len(board.areas),
+        max_region_size,
         rel_border_size_1,
         rel_border_size_2,
         border_strength,
         np.mean(neigh_dice_dist),
     ]
-    return np.asarray(feature_vector)
+    eps = np.finfo(np.float32).eps.item()
+    return np.asarray(feature_vector, dtype=np.float32) + eps
 
 
 def standardize_data(x: np.ndarray, axis=0):

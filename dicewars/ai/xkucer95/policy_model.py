@@ -7,8 +7,8 @@ import numpy as np
 class PolicyModel(torch.nn.Module):
     def __init__(self, on_policy: bool):
         super().__init__()
-        self.affine1 = torch.nn.Linear(12, 6, True)
-        self.affine2 = torch.nn.Linear( 6, 2, True)
+        self.affine1 = torch.nn.Linear(6, 3, True)
+        self.affine2 = torch.nn.Linear(3, 1, True)
         self.train(on_policy)
         self.on_policy = on_policy
         if on_policy:
@@ -17,31 +17,29 @@ class PolicyModel(torch.nn.Module):
 
     def forward(self, x):
         a = self.affine1(x)
-        a = f.relu(a)
+        a = f.sigmoid(a)
         a = self.affine2(a)
-        y = f.softmax(a)
+        y = f.sigmoid(a)
         return y
 
     def select_action(self, data_in: np.ndarray):
-        attacks, probs = [], []
+        probs = []
         for x in data_in:
             if self.on_policy:
-                y = self(torch.from_numpy(x.astype(np.float32)))
-                m = torch.distributions.Categorical(y)
+                y = self(torch.from_numpy(x))
+                m = torch.distributions.Bernoulli(probs=y)
                 action = int(m.sample())
             else:
                 with torch.no_grad():
-                    y = self(torch.from_numpy(x.astype(np.float32)))
-                    action = int(np.argmax(y))
+                    y = self(torch.from_numpy(x))
+                    action = 1 if y > 0.5 else 0
             if action == 1:
-                attacks.append(action)
-                probs.append(y[action])
-        if len(attacks) == 0:
+                probs.append(y)
+        if len(probs) == 0:
             return None
         best_attack = int(np.argmax(probs))
-        prob = probs[best_attack]
         if self.on_policy:
-            self.train_temp.append(prob)
+            self.train_temp.append(probs[best_attack])
         return best_attack
 
     def give_reward(self, reward):

@@ -23,8 +23,8 @@ class AI:
         if path.exists(self.policy_model_path):
             self.policy_model.load_state_dict(torch.load(self.policy_model_path))
         if on_policy:
-            self.optimizer = torch.optim.Adam(self.policy_model.parameters(), lr=0.001)
-            self.batch_size = 64
+            self.optimizer = torch.optim.Adam(self.policy_model.parameters(), lr=1.e-3)
+            self.batch_size = 128
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         try:
@@ -39,16 +39,14 @@ class AI:
             return EndTurnCommand()
         data_in = []
         x_curr = state_descriptor(board, self.player_name, self.players_order)
-        x_curr = np.concatenate((np.asarray([1.]), x_curr))
         for source, target, succ_prob in attacks:
             ts = TurnSimulator(board)
             ts.do_attack(source, target, succ_prob, True)
             if board.nb_players_alive() == 1:
                 return BattleCommand(source.get_name(), target.get_name())
             x_next = state_descriptor(board, self.player_name, self.players_order)
-            x_next = np.concatenate((np.asarray([succ_prob]), x_next))
+            x = np.concatenate((np.asarray([succ_prob], dtype=np.float32), x_next / x_curr))
             ts.undo_attack()
-            x = np.concatenate((x_curr, x_next))
             data_in.append(x)
 
         data_in = np.vstack(data_in)
