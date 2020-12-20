@@ -6,6 +6,7 @@ import signal
 
 # For xkucer95 AI policy training
 import torch, numpy
+from collections import deque
 
 from .timers import FischerTimer, FixedTimer
 
@@ -31,6 +32,10 @@ class BattleCommand:
 
 class EndTurnCommand:
     pass
+
+
+# For xkucer95 AI policy training
+from dicewars.ai.xkucer95.utils import state_descriptor
 
 
 class AIDriver:
@@ -64,6 +69,8 @@ class AIDriver:
             # For xkucer95 AI policy training
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                 self.xkucer95_score = self.game.players[self.game.current_player_name].get_score()
+            self.xkucer95_game_states_buffer = deque()
+
         except TimeoutError:
             self.logger.error("The AI failed to construct itself in {}s. Disabling it.".format(TIME_LIMIT_CONSTRUCTOR))
             self.ai_disabled = True
@@ -145,6 +152,12 @@ class AIDriver:
                 self.game.players[atk_name].set_score(msg['score'][str(atk_name)])
                 self.game.players[def_name].set_score(msg['score'][str(def_name)])
 
+                # xkucer95 AI value training
+                if self.player_name == def_name and self.game.players[def_name].get_score() == 0:
+                    with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:
+                        state = self.xkucer95_game_states_buffer.popleft()
+                        f.write('0 {}\n'.format(' '.join(list(str(x) for x in state))))
+
             self.waitingForResponse = False
 
         elif msg['type'] == 'end_turn':
@@ -158,6 +171,13 @@ class AIDriver:
                 area_object.set_owner(owner_name)
                 area_object.set_dice(msg['areas'][area]['dice'])
 
+                # xkucer95 AI value training
+                if self.player_name == self.game.current_player_name:
+                    state = state_descriptor(self.board, self.player_name, self.game.players_order)
+                    self.xkucer95_game_states_buffer.append(state)
+                    if len(self.xkucer95_game_states_buffer) > 10:  # Last 10 moves of each player...
+                        self.xkucer95_game_states_buffer.popleft()
+
             current_player.deactivate()
             self.game.current_player_name = msg['current_player']
             self.game.current_player = self.game.players[msg['current_player']]
@@ -168,9 +188,8 @@ class AIDriver:
                     curr_score = self.game.players[self.game.current_player_name].get_score()
                     diff = (curr_score - self.xkucer95_score)
                     try:
-                        self.ai.reward_for_turn(numpy.tanh(diff * 0.25))
-                    except Exception as e:
-                        print(e)
+                        self.ai.give_reward(numpy.tanh(diff * 0.25))
+                    except:
                         pass
                     self.xkucer95_score = curr_score
 
@@ -183,8 +202,13 @@ class AIDriver:
             # For xkucer95 AI policy training
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                 if self.player_name == msg['winner']:
-                    self.ai.reward_for_turn(1.0, True)  # WON
+                    self.ai.give_reward(1.0, True)
                     torch.save(self.ai.policy_model.state_dict(), self.ai.policy_model_path)
+            # xkucer95 AI value training
+            if self.player_name == msg['winner']:
+                with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:
+                    state = self.xkucer95_game_states_buffer.popleft()
+                    f.write('1 {}\n'.format(' '.join(list(str(x) for x in state))))
             return False
 
         return True

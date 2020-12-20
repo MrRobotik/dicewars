@@ -12,8 +12,8 @@ class PolicyModel(torch.nn.Module):
         self.train(on_policy)
         self.on_policy = on_policy
         if on_policy:
-            self.train_buff_1 = []
-            self.train_buff_2 = []
+            self.train_temp = list()
+            self.train_buff = list()
 
     def forward(self, x):
         a = self.affine1(x)
@@ -41,26 +41,26 @@ class PolicyModel(torch.nn.Module):
         best_attack = int(np.argmax(probs))
         prob = probs[best_attack]
         if self.on_policy:
-            self.train_buff_2.append(prob)
+            self.train_temp.append(prob)
         return best_attack
 
-    def reward_for_turn(self, reward):
+    def give_reward(self, reward):
         discount = 0.9
         n = 0
-        while self.train_buff_2:
-            p = self.train_buff_2.pop()
+        while self.train_temp:
+            p = self.train_temp.pop()
             p = 1. - p if reward < 0. else p
             r = discount**n * abs(reward)
             if p == 0.:
                 p += np.finfo(np.float32).eps.item()
-            self.train_buff_1.append((p, r))
+            self.train_buff.append((p, r))
             n += 1
 
     def backward(self):
-        loss = sum(-torch.log(p) * r for p, r in self.train_buff_1)
-        loss /= len(self.train_buff_1)
+        loss = sum(-torch.log(p) * r for p, r in self.train_buff)
+        loss /= len(self.train_buff)
         loss.backward()
-        self.train_buff_1.clear()
+        self.train_buff.clear()
 
         loss_output = open('dicewars/ai/xkucer95/models/loss.csv', 'a')
         loss_output.write('{}\n'.format(float(loss)))

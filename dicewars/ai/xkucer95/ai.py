@@ -18,14 +18,13 @@ class AI:
         self.player_name = player_name
         self.players_order = players_order
         self.logger = logging.getLogger('AI')
-        self.curr_score = None
         self.policy_model = PolicyModel(on_policy)
         self.policy_model_path = 'dicewars/ai/xkucer95/models/policy_model.pt'
         if path.exists(self.policy_model_path):
             self.policy_model.load_state_dict(torch.load(self.policy_model_path))
         if on_policy:
             self.optimizer = torch.optim.Adam(self.policy_model.parameters(), lr=0.001)
-            self.batch_size = 32
+            self.batch_size = 64
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         try:
@@ -51,6 +50,7 @@ class AI:
             ts.undo_attack()
             x = np.concatenate((x_curr, x_next))
             data_in.append(x)
+
         data_in = np.vstack(data_in)
         action = self.policy_model.select_action(data_in)
         if action is None:
@@ -58,10 +58,10 @@ class AI:
         source, target, _ = attacks[action]
         return BattleCommand(source.get_name(), target.get_name())
 
-    def reward_for_turn(self, reward, game_over=False):
+    def give_reward(self, reward, game_end=False):
         if self.policy_model.on_policy:
-            self.policy_model.reward_for_turn(reward)
-            if len(self.policy_model.train_buff_1) >= self.batch_size or game_over:
+            self.policy_model.give_reward(reward)
+            if len(self.policy_model.train_buff) >= self.batch_size or game_end:
                 self.optimizer.zero_grad()
                 self.policy_model.backward()
                 self.optimizer.step()
