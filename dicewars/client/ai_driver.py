@@ -214,7 +214,8 @@ class AIDriver:
             # For xkucer95 AI policy training
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                 if self.player_name == msg['winner']:
-                    self.ai.give_reward(+5.0)
+                    self.ai.give_reward(self.ai.curr_reward)
+                    self.ai.curr_reward = 0.
             # xkucer95 AI value training
             # if self.player_name == msg['winner']:
             #     with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:

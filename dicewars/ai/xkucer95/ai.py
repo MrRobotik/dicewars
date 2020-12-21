@@ -45,7 +45,7 @@ class AI:
             survival_prob_1 = survival_prob(board, source, self.player_name)
             survival_prob_2 = survival_prob(board, target, self.player_name)
             attack_specific = [succ_prob, survival_prob_1, survival_prob_2]
-            x = np.concatenate((np.asarray(attack_specific, dtype=np.float32), x_next - x_curr))
+            x = np.concatenate((np.asarray(attack_specific, dtype=np.float32), x_curr, x_next))
             ts.undo_attack()
             data_in.append(x)
 
