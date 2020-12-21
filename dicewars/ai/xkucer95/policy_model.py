@@ -7,17 +7,19 @@ from os import path
 class PolicyModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.affine1 = torch.nn.Linear(15, 3, True)
-        self.affine2 = torch.nn.Linear( 3, 1, True)
+        self.logistic = torch.nn.Linear(15, 1, True)
+        # self.affine_atk_1 = torch.nn.Linear(3, 1, True)
+        # self.affine_cst = torch.nn.Linear(15, 10, True)
+        # self.affine_nst = torch.nn.Linear(10,  1, True)
         self.model_path = 'dicewars/ai/xkucer95/models/policy_model.pt'
         if path.exists(self.model_path):
             self.load_state_dict(torch.load(self.model_path))
 
     def forward(self, x):
-        a = self.affine1(x)
-        a = torch.sigmoid(a)
-        a = self.affine2(a)
-        y = torch.sigmoid(a)
+        # x1 = torch.from_numpy(x[0:3])
+        # x2 = torch.from_numpy(x[3:9])
+        # x3 = torch.from_numpy(x[9:])
+        y = torch.sigmoid(self.logistic(x))
         return y
 
     def select_action(self, data_in: np.ndarray, sample=False):
