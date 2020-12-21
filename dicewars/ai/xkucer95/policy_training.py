@@ -22,7 +22,7 @@ def main():
     optimizer = torch.optim.Adam(policy_model.parameters(), lr=1e-3)
     batch_size = 128
 
-    for epoch in range(50):
+    for epoch in range(20):
         total_loss = 0.
         for x, r in batch_provider(trn, batch_size):
             y = policy_model(torch.from_numpy(x))
@@ -36,7 +36,7 @@ def main():
             loss.backward()
             optimizer.step()
             total_loss += float(loss)
-        print(total_loss)
+        print(total_loss / batch_size)
 
     torch.save(policy_model.state_dict(), policy_model.model_path)
 
