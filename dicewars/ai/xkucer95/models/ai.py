@@ -50,7 +50,7 @@ class AI:
             data_in.append(x)
 
         data_in = np.vstack(data_in)
-        action = self.policy_model.select_action(data_in, True)
+        action = self.policy_model.select_action(data_in, False)
         if action is None:
             return EndTurnCommand()
         self.actions_buffer.append(data_in[action])

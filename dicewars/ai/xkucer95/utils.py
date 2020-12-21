@@ -87,6 +87,16 @@ def possible_attacks(board: Board, player_name: int):
                 yield source, target, succ_prob
 
 
+def survival_prob(board: Board, target: Area, player_name: int):
+    prob = 1.
+    for adj in target.get_adjacent_areas():
+        source = board.get_area(adj)
+        if source.get_owner_name() == player_name or not source.can_attack():
+            continue
+        prob *= 1. - ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
+    return prob
+
+
 def state_descriptor(board: Board, player_name: int, players: list):
     areas = board.get_player_areas(player_name)
     regions = board.get_players_regions(player_name)
@@ -94,6 +104,7 @@ def state_descriptor(board: Board, player_name: int, players: list):
     max_region_size = max(len(r) for r in regions)
     rel_border_size_1 = len(border) / sum(len(board.get_player_border(name)) for name in players)
     rel_border_size_2 = sum(a.get_dice() for a in border) / sum(a.get_dice() for a in areas)
+    rel_area_size = len(areas) / sum(len(board.get_player_areas(name)) for name in players)
 
     best_border = []
     for r in regions:
@@ -101,16 +112,7 @@ def state_descriptor(board: Board, player_name: int, players: list):
             for area in map(lambda a: board.get_area(a), r):
                 if board.is_at_border(area):
                     best_border.append(area)
-    border_strength = 0.
-    for target in best_border:
-        survival_prob = 1.
-        for adj in target.get_adjacent_areas():
-            source = board.get_area(adj)
-            if source.get_owner_name() == player_name or not source.can_attack():
-                continue
-            survival_prob *= 1. - ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
-        border_strength += survival_prob
-    border_strength /= len(best_border)
+    border_strength = sum(survival_prob(board, area, player_name) for area in best_border) / len(border)
 
     neigh_dice_dist = []
     for neigh in map(lambda a: a.get_adjacent_areas(), areas):
@@ -127,11 +129,11 @@ def state_descriptor(board: Board, player_name: int, players: list):
         max_region_size,
         rel_border_size_1,
         rel_border_size_2,
+        rel_area_size,
         border_strength,
         np.mean(neigh_dice_dist),
     ]
-    eps = np.finfo(np.float32).eps.item()
-    return np.asarray(feature_vector, dtype=np.float32) + eps
+    return np.asarray(feature_vector, dtype=np.float32)
 
 
 def standardize_data(x: np.ndarray, axis=0):

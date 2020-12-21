@@ -69,7 +69,6 @@ class AIDriver:
             # For xkucer95 AI policy training
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                 self.xkucer95_score = self.game.players[self.game.current_player_name].get_score()
-                self.xkucer95_total_reward = 0.
             self.xkucer95_game_states_buffer = deque()
 
         except TimeoutError:
@@ -156,8 +155,7 @@ class AIDriver:
                 # For xkucer95 AI policy training
                 if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                     if self.player_name == def_name and self.game.players[def_name].get_score() == 0:
-                        self.ai.give_reward(-1.0, True)
-                        self.xkucer95_total_reward += -1.0
+                        self.ai.give_reward(-5.0)
                 # xkucer95 AI value training
                 # if self.player_name == def_name and self.game.players[def_name].get_score() == 0:
                 #     with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:
@@ -194,8 +192,13 @@ class AIDriver:
                     curr_score = self.game.players[self.game.current_player_name].get_score()
                     diff = (curr_score - self.xkucer95_score)
                     try:
-                        self.ai.give_reward(numpy.tanh(diff * 0.25))
-                        self.xkucer95_total_reward += numpy.tanh(diff * 0.25)
+                        # self.ai.give_reward(numpy.tanh(diff * 0.25))
+                        if diff > 0:
+                            self.ai.give_reward(+1.0)
+                        elif diff == 0.:
+                            self.ai.give_reward(+1.0)
+                        else:
+                            self.ai.give_reward(-1.0)
                     except:
                         pass
                     self.xkucer95_score = curr_score
@@ -209,10 +212,7 @@ class AIDriver:
             # For xkucer95 AI policy training
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                 if self.player_name == msg['winner']:
-                    self.ai.give_reward(1.0, True)
-                    self.xkucer95_total_reward += 1.0
-                torch.save(self.ai.policy_model.state_dict(), self.ai.policy_model_path)
-                open('dicewars/ai/xkucer95/models/rewards.csv', 'a').write('{}\n'.format(self.xkucer95_total_reward))
+                    self.ai.give_reward(+5.0)
             # xkucer95 AI value training
             # if self.player_name == msg['winner']:
             #     with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:
