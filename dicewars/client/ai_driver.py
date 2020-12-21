@@ -166,10 +166,9 @@ class AIDriver:
                         diff = self.ai.curr_score - self.game.players[self.player_name].get_score()
                         self.ai.curr_score = self.game.players[self.player_name].get_score()
                         if diff == 0:
-                            self.ai.curr_reward -= 1.0
+                            self.ai.curr_reward -= 8.0
                         else:
-                            self.ai.curr_reward += 1.0
-
+                            self.ai.curr_reward += 2.0
                 # xkucer95 AI value training
                 # if self.player_name == def_name and self.game.players[def_name].get_score() == 0:
                 #     with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:

@@ -19,7 +19,7 @@ class PolicyModel(torch.nn.Module):
         # x1 = torch.from_numpy(x[0:3])
         # x2 = torch.from_numpy(x[3:9])
         # x3 = torch.from_numpy(x[9:])
-        y = torch.sigmoid(self.logistic(x))
+        y = torch.sigmoid(self.logistic(torch.from_numpy(x)))
         return y
 
     def select_action(self, data_in: np.ndarray, sample=False):
@@ -27,7 +27,7 @@ class PolicyModel(torch.nn.Module):
         # print('-----------------------------------------')
         for x in data_in:
             with torch.no_grad():
-                y = self(torch.from_numpy(x))
+                y = self(x)
                 if sample:
                     m = torch.distributions.Bernoulli(probs=y)
                     action = int(m.sample())
