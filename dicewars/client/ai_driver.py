@@ -68,7 +68,8 @@ class AIDriver:
                 self.ai = ai_constructor(self.player_name, board_copy, players_order_copy)
             # For xkucer95 AI policy training
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
-                self.xkucer95_score = self.game.players[self.game.current_player_name].get_score()
+                self.ai.curr_reward = 0.
+                self.ai.curr_score = self.game.players[self.player_name].get_score()
             self.xkucer95_game_states_buffer = deque()
 
         except TimeoutError:
@@ -154,8 +155,21 @@ class AIDriver:
 
                 # For xkucer95 AI policy training
                 if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
-                    if self.player_name == def_name and self.game.players[def_name].get_score() == 0:
-                        self.ai.give_reward(-5.0)
+                    if self.player_name == def_name:
+                        diff = self.ai.curr_score - self.game.players[self.player_name].get_score()
+                        self.ai.curr_score = self.game.players[self.player_name].get_score()
+                        if diff == 0:
+                            self.ai.curr_reward += 1.0
+                        else:
+                            self.ai.curr_reward -= 1.0
+                    elif self.player_name == atk_name:
+                        diff = self.ai.curr_score - self.game.players[self.player_name].get_score()
+                        self.ai.curr_score = self.game.players[self.player_name].get_score()
+                        if diff == 0:
+                            self.ai.curr_reward -= 1.0
+                        else:
+                            self.ai.curr_reward += 1.0
+
                 # xkucer95 AI value training
                 # if self.player_name == def_name and self.game.players[def_name].get_score() == 0:
                 #     with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:
@@ -175,13 +189,6 @@ class AIDriver:
                 area_object.set_owner(owner_name)
                 area_object.set_dice(msg['areas'][area]['dice'])
 
-                # xkucer95 AI value training
-                if self.player_name == self.game.current_player_name:
-                    state = state_descriptor(self.board, self.player_name, self.game.players_order)
-                    self.xkucer95_game_states_buffer.append(state)
-                    if len(self.xkucer95_game_states_buffer) > 10:  # Last 10 moves of each player...
-                        self.xkucer95_game_states_buffer.popleft()
-
             current_player.deactivate()
             self.game.current_player_name = msg['current_player']
             self.game.current_player = self.game.players[msg['current_player']]
@@ -189,19 +196,14 @@ class AIDriver:
             # For xkucer95 AI policy training
             if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
                 if self.player_name == self.game.current_player_name:
-                    curr_score = self.game.players[self.game.current_player_name].get_score()
-                    diff = (curr_score - self.xkucer95_score)
-                    try:
-                        # self.ai.give_reward(numpy.tanh(diff * 0.25))
-                        if diff > 0:
-                            self.ai.give_reward(+1.0)
-                        elif diff == 0.:
-                            self.ai.give_reward(+1.0)
-                        else:
-                            self.ai.give_reward(-1.0)
-                    except:
-                        pass
-                    self.xkucer95_score = curr_score
+                    self.ai.give_reward(self.ai.curr_reward)
+                    self.ai.curr_reward = 0.
+            # xkucer95 AI value training
+            if self.player_name == self.game.current_player_name:
+                state = state_descriptor(self.board, self.player_name, self.game.players_order)
+                self.xkucer95_game_states_buffer.append(state)
+                if len(self.xkucer95_game_states_buffer) > 10:  # Last 10 moves of each player...
+                    self.xkucer95_game_states_buffer.popleft()
 
             self.game.players[self.game.current_player_name].activate()
             self.waitingForResponse = False
