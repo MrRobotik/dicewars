@@ -22,7 +22,7 @@ class PolicyModel(torch.nn.Module):
 
     def select_action(self, data_in: np.ndarray, sample=False):
         probs = []
-        print('-----------------------------------------')
+        # print('-----------------------------------------')
         for x in data_in:
             with torch.no_grad():
                 y = self(torch.from_numpy(x))
@@ -31,7 +31,7 @@ class PolicyModel(torch.nn.Module):
                     action = int(m.sample())
                 else:
                     action = 1 if y > 0.5 else 0
-                print('prob: ', y)
+                # print('prob: ', y)
             if action == 1:
                 probs.append(y)
         if len(probs) == 0:
