@@ -1,6 +1,7 @@
 from dicewars.client.game.board import Board
 from dicewars.client.game.board import Area
 import numpy as np
+import torch
 
 ATTACK_SUCC_PROBS = {
     2: {
@@ -98,8 +99,8 @@ def survival_prob(target: Area, board: Board):
 
 
 def rel_area_power(area: Area, board: Board):
-    player_power = 0
-    total_power = 0
+    player_power = area.get_dice()
+    total_power = player_power
     for adj in area.get_adjacent_areas():
         adj_area = board.get_area(adj)
         dice = adj_area.get_dice()
@@ -110,12 +111,20 @@ def rel_area_power(area: Area, board: Board):
 
 
 def area_descriptor(area: Area, board: Board):
-    unique_neighs = {board.get_area(adj).get_owner_name() for adj in area.get_adjacent_areas()}
+    neighborhood = area.get_adjacent_areas()
+    player_name = area.get_owner_name()
+    enemy_areas = [adj for adj in neighborhood if board.get_area(adj).get_owner_name() != player_name]
+    owned_areas = [adj for adj in neighborhood if board.get_area(adj).get_owner_name() == player_name]
+    unique_enemies = {board.get_area(adj).get_owner_name() for adj in neighborhood}
+    if player_name in unique_enemies:
+        unique_enemies.remove(player_name)
+
     feature_vector = [
         survival_prob(area, board),
         rel_area_power(area, board),
-        len(area.get_adjacent_areas()),
-        len(unique_neighs)
+        len(enemy_areas),
+        len(owned_areas),
+        len(unique_enemies)
     ]
     return np.asarray(feature_vector, dtype=np.float32)
 
@@ -145,6 +154,20 @@ def game_descriptor(board: Board, player_name: int, players: list):
         np.mean([rel_area_power(a, board) for a in areas])
     ]
     return np.asarray(feature_vector, dtype=np.float32)
+
+
+def batch_provider(x, t, batch_size):
+    indices = np.random.permutation(np.arange(0, len(t)))
+    for i in range(0, len(t) - batch_size, batch_size):
+        batch_x = torch.FloatTensor(x[indices[i:i+batch_size]])
+        batch_t = torch.FloatTensor(t[indices[i:i+batch_size]]).unsqueeze(dim=1)
+        yield batch_x, batch_t
+
+
+def evaluate(model, x, t):
+    soft = model(torch.from_numpy(x)).detach().numpy()
+    print('ones', np.count_nonzero((soft > 0.5)))
+    return np.count_nonzero((soft > 0.5).ravel() == t) / len(t)
 
 
 def standardize_data(x: np.ndarray, axis=0):
