@@ -191,9 +191,9 @@ class AIDriver:
             # xkucer95 AI training
             if self.player_name == self.game.current_player_name:
                 for a, state in self.game.players[self.player_name].curr_areas.items():
-                    if self.player_name != self.board.get_area(a).get_owner_name():
+                    if self.player_name == self.board.get_area(a).get_owner_name():
                         with open('dicewars/ai/xkucer95/models/area_states.csv', 'a') as f:
-                            f.write('0 {}\n'.format(' '.join(list(str(x) for x in state))))
+                            f.write('1 {}\n'.format(' '.join(list(str(x) for x in state))))
 
             self.game.players[self.game.current_player_name].activate()
             self.waitingForResponse = False

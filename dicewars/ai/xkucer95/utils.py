@@ -166,7 +166,6 @@ def batch_provider(x, t, batch_size):
 
 def evaluate(model, x, t):
     soft = model(torch.from_numpy(x)).detach().numpy()
-    print('ones', np.count_nonzero((soft > 0.5)))
     return np.count_nonzero((soft > 0.5).ravel() == t) / len(t)
 
 

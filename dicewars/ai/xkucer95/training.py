@@ -25,7 +25,7 @@ def main():
         exit(1)
 
     model = HoldAreaProbPredictor()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
     batch_size = 32
 
     best_accuracy = 0.
@@ -45,14 +45,15 @@ def main():
             accuracy = evaluate(model, x_eval, t_eval)
         losses.append(loss_avg)
         accuracies.append(accuracy)
-        print(loss_avg)
-        print('acc:', accuracy)
         if accuracy > best_accuracy:
             best_accuracy = accuracy
             best_model = copy.deepcopy(model)
 
     torch.save(best_model.state_dict(), best_model.model_path)
+    print('best acc.: {}'.format(best_accuracy))
+    plt.subplot(2, 1, 1)
     plt.plot(losses, label='loss')
+    plt.subplot(2, 1, 2)
     plt.plot(accuracies, label='accuracy')
     plt.show()
 
