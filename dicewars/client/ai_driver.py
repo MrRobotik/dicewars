@@ -35,7 +35,7 @@ class EndTurnCommand:
 
 
 # For xkucer95 AI policy training
-from dicewars.ai.xkucer95.utils import state_descriptor
+from dicewars.ai.xkucer95.utils import game_descriptor
 
 
 class AIDriver:
@@ -67,10 +67,7 @@ class AIDriver:
             with FixedTimer(TIME_LIMIT_CONSTRUCTOR):
                 self.ai = ai_constructor(self.player_name, board_copy, players_order_copy)
             # For xkucer95 AI policy training
-            if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
-                self.ai.curr_reward = 0.
-                self.ai.curr_score = self.game.players[self.player_name].get_score()
-            self.xkucer95_game_states_buffer = deque()
+            self.game_states_buffer = deque()
 
         except TimeoutError:
             self.logger.error("The AI failed to construct itself in {}s. Disabling it.".format(TIME_LIMIT_CONSTRUCTOR))
@@ -153,22 +150,6 @@ class AIDriver:
                 self.game.players[atk_name].set_score(msg['score'][str(atk_name)])
                 self.game.players[def_name].set_score(msg['score'][str(def_name)])
 
-                # For xkucer95 AI policy training
-                if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
-                    if self.player_name == def_name:
-                        diff = self.ai.curr_score - self.game.players[self.player_name].get_score()
-                        self.ai.curr_score = self.game.players[self.player_name].get_score()
-                        if diff == 0:
-                            self.ai.curr_reward += 1.0
-                        else:
-                            self.ai.curr_reward -= 1.0
-                    elif self.player_name == atk_name:
-                        diff = self.ai.curr_score - self.game.players[self.player_name].get_score()
-                        self.ai.curr_score = self.game.players[self.player_name].get_score()
-                        if diff == 0:
-                            self.ai.curr_reward -= 8.0
-                        else:
-                            self.ai.curr_reward += 2.0
                 # xkucer95 AI training
                 # if self.player_name == def_name and self.game.players[def_name].get_score() == 0:
                 #     with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:
@@ -192,17 +173,12 @@ class AIDriver:
             self.game.current_player_name = msg['current_player']
             self.game.current_player = self.game.players[msg['current_player']]
 
-            # For xkucer95 AI policy training
-            if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
-                if self.player_name == self.game.current_player_name:
-                    self.ai.give_reward(self.ai.curr_reward)
-                    self.ai.curr_reward = 0.
             # xkucer95 AI value training
             if self.player_name == self.game.current_player_name:
-                state = state_descriptor(self.board, self.player_name, self.game.players_order)
-                self.xkucer95_game_states_buffer.append(state)
-                if len(self.xkucer95_game_states_buffer) > 10:  # Last 10 moves of each player...
-                    self.xkucer95_game_states_buffer.popleft()
+                state = game_descriptor(self.board, self.player_name, self.game.players_order)
+                self.game_states_buffer.append(state)
+                if len(self.game_states_buffer) > 10:  # Last 10 moves of each player...
+                    self.game_states_buffer.popleft()
 
             self.game.players[self.game.current_player_name].activate()
             self.waitingForResponse = False
@@ -210,11 +186,6 @@ class AIDriver:
         elif msg['type'] == 'game_end':
             self.logger.info("Player {} has won".format(msg['winner']))
             self.game.socket.close()
-            # For xkucer95 AI policy training
-            if str(type(self.ai)) == '<class \'dicewars.ai.xkucer95.ai.AI\'>':
-                if self.player_name == msg['winner']:
-                    self.ai.give_reward(self.ai.curr_reward)
-                    self.ai.curr_reward = 0.
             # xkucer95 AI training
             # if self.player_name == msg['winner']:
             #     with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:

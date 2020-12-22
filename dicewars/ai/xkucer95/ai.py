@@ -32,9 +32,9 @@ class AI:
         attacks = possible_attacks(board, self.player_name)
         attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
         attacks = sorted(attacks, key=lambda x: x[2], reverse=True)
-        print(attacks)
         if len(attacks) == 0:
             return EndTurnCommand()
+        print(game_descriptor(board, self.player_name, self.players_order))
         # data_in = []
         # x_curr = state_descriptor(board, self.player_name, self.players_order)
         # for source, target, succ_prob in attacks:
@@ -57,13 +57,3 @@ class AI:
         # self.actions_buffer.append(data_in[action])
         source, target, _ = attacks[0]
         return BattleCommand(source.get_name(), target.get_name())
-
-    def give_reward(self, reward):
-        discount = 0.95
-        n = 0
-        with open('dicewars/ai/xkucer95/models/policy_model_trn.dat', 'a') as f:
-            while self.actions_buffer:
-                x = self.actions_buffer.pop()
-                r = discount**n * reward
-                f.write('{} {}\n'.format(' '.join([str(v) for v in x]), r))
-                n += 1

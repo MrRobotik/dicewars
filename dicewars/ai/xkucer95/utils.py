@@ -87,17 +87,40 @@ def possible_attacks(board: Board, player_name: int):
                 yield source, target, succ_prob
 
 
-def survival_prob(board: Board, target: Area, player_name: int):
+def survival_prob(target: Area, board: Board):
     prob = 1.
     for adj in target.get_adjacent_areas():
         source = board.get_area(adj)
-        if source.get_owner_name() == player_name or not source.can_attack():
+        if source.get_owner_name() == target.get_owner_name() or not source.can_attack():
             continue
         prob *= 1. - ATTACK_SUCC_PROBS[source.get_dice()][target.get_dice()]
     return prob
 
 
-def state_descriptor(board: Board, player_name: int, players: list):
+def rel_area_power(area: Area, board: Board):
+    player_power = 0
+    total_power = 0
+    for adj in area.get_adjacent_areas():
+        adj_area = board.get_area(adj)
+        dice = adj_area.get_dice()
+        if adj_area.get_owner_name() == area.get_owner_name():
+            player_power += dice
+        total_power += dice
+    return player_power / total_power
+
+
+def area_descriptor(area: Area, board: Board):
+    unique_neighs = {board.get_area(adj).get_owner_name() for adj in area.get_adjacent_areas()}
+    feature_vector = [
+        survival_prob(area, board),
+        rel_area_power(area, board),
+        len(area.get_adjacent_areas()),
+        len(unique_neighs)
+    ]
+    return np.asarray(feature_vector, dtype=np.float32)
+
+
+def game_descriptor(board: Board, player_name: int, players: list):
     areas = board.get_player_areas(player_name)
     regions = board.get_players_regions(player_name)
     border = board.get_player_border(player_name)
@@ -112,26 +135,14 @@ def state_descriptor(board: Board, player_name: int, players: list):
             for area in map(lambda a: board.get_area(a), r):
                 if board.is_at_border(area):
                     best_border.append(area)
-    border_strength = sum(survival_prob(board, area, player_name) for area in best_border) / len(border)
-
-    neigh_dice_dist = []
-    for neigh in map(lambda a: a.get_adjacent_areas(), areas):
-        player_power = 0
-        total_power = 0
-        for area in map(lambda a: board.get_area(a), neigh):
-            dice = area.get_dice()
-            if area.get_owner_name() == player_name:
-                player_power += dice
-            total_power += dice
-        neigh_dice_dist.append(player_power / total_power)
 
     feature_vector = [
         max_region_size,
         rel_border_size_1,
         rel_border_size_2,
         rel_area_size,
-        border_strength,
-        np.mean(neigh_dice_dist),
+        np.mean([survival_prob(a, board) for a in best_border]),
+        np.mean([rel_area_power(a, board) for a in areas])
     ]
     return np.asarray(feature_vector, dtype=np.float32)
 
