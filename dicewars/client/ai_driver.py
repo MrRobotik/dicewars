@@ -169,7 +169,7 @@ class AIDriver:
                             self.ai.curr_reward -= 8.0
                         else:
                             self.ai.curr_reward += 2.0
-                # xkucer95 AI value training
+                # xkucer95 AI training
                 # if self.player_name == def_name and self.game.players[def_name].get_score() == 0:
                 #     with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:
                 #         state = self.xkucer95_game_states_buffer.popleft()
@@ -215,7 +215,7 @@ class AIDriver:
                 if self.player_name == msg['winner']:
                     self.ai.give_reward(self.ai.curr_reward)
                     self.ai.curr_reward = 0.
-            # xkucer95 AI value training
+            # xkucer95 AI training
             # if self.player_name == msg['winner']:
             #     with open('dicewars/ai/xkucer95/models/training_data/data.csv', 'a') as f:
             #         state = self.xkucer95_game_states_buffer.popleft()

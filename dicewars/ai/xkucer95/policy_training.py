@@ -20,12 +20,16 @@ def main():
 
     policy_model = PolicyModel()
     optimizer = torch.optim.Adam(policy_model.parameters(), lr=1e-3)
-    batch_size = 128
+    batch_size = 512
+
+    r_mean = np.mean(trn[-1])
+    r_std = np.std(trn[-1])
 
     for epoch in range(100):
         total_loss = 0.
         for x, r in batch_provider(trn, batch_size):
-            y = policy_model(x)
+            y = policy_model(torch.from_numpy(x))
+            r = (r - r_mean) / r_std
             pos = np.where(r > 0.)
             neg = np.where(r < 0.)
             optimizer.zero_grad()

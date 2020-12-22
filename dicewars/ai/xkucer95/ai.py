@@ -30,31 +30,32 @@ class AI:
 
     def ai_turn_policy_only(self, board):
         attacks = possible_attacks(board, self.player_name)
-        # attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
-        attacks = list(attacks)
+        attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
+        attacks = sorted(attacks, key=lambda x: x[2], reverse=True)
+        print(attacks)
         if len(attacks) == 0:
             return EndTurnCommand()
-        data_in = []
-        x_curr = state_descriptor(board, self.player_name, self.players_order)
-        for source, target, succ_prob in attacks:
-            ts = TurnSimulator(board)
-            ts.do_attack(source, target, succ_prob, True)
-            if board.nb_players_alive() == 1:
-                return BattleCommand(source.get_name(), target.get_name())
-            x_next = state_descriptor(board, self.player_name, self.players_order)
-            survival_prob_1 = survival_prob(board, source, self.player_name)
-            survival_prob_2 = survival_prob(board, target, self.player_name)
-            attack_specific = [succ_prob, survival_prob_1, survival_prob_2]
-            x = np.concatenate((np.asarray(attack_specific, dtype=np.float32), x_curr, x_next))
-            ts.undo_attack()
-            data_in.append(x)
-
-        data_in = np.vstack(data_in)
-        action = self.policy_model.select_action(data_in, True)
-        if action is None:
-            return EndTurnCommand()
-        self.actions_buffer.append(data_in[action])
-        source, target, _ = attacks[action]
+        # data_in = []
+        # x_curr = state_descriptor(board, self.player_name, self.players_order)
+        # for source, target, succ_prob in attacks:
+        #     ts = TurnSimulator(board)
+        #     ts.do_attack(source, target, succ_prob, True)
+        #     if board.nb_players_alive() == 1:
+        #         return BattleCommand(source.get_name(), target.get_name())
+        #     x_next = state_descriptor(board, self.player_name, self.players_order)
+        #     survival_prob_1 = survival_prob(board, source, self.player_name)
+        #     survival_prob_2 = survival_prob(board, target, self.player_name)
+        #     attack_specific = [succ_prob, survival_prob_1, survival_prob_2]
+        #     x = np.concatenate((np.asarray(attack_specific, dtype=np.float32), x_curr, x_next))
+        #     ts.undo_attack()
+        #     data_in.append(x)
+        #
+        # data_in = np.vstack(data_in)
+        # action = self.policy_model.select_action(data_in, False)
+        # if action is None:
+        #     return EndTurnCommand()
+        # self.actions_buffer.append(data_in[action])
+        source, target, _ = attacks[0]
         return BattleCommand(source.get_name(), target.get_name())
 
     def give_reward(self, reward):

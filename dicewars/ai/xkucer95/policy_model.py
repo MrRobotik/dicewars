@@ -7,35 +7,45 @@ from os import path
 class PolicyModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.logistic = torch.nn.Linear(15, 1, True)
-        # self.affine_atk_1 = torch.nn.Linear(3, 1, True)
-        # self.affine_cst = torch.nn.Linear(15, 10, True)
-        # self.affine_nst = torch.nn.Linear(10,  1, True)
+        self.affine_atk = torch.nn.Linear(3, 1, True)
+        self.affine_cst = torch.nn.Linear(6, 3, True)
+        self.affine_nst = torch.nn.Linear(6, 3, True)
+        self.affine_cmp = torch.nn.Linear(6, 1, True)
+        self.affine_fin = torch.nn.Linear(2, 1, True)
         self.model_path = 'dicewars/ai/xkucer95/models/policy_model.pt'
         if path.exists(self.model_path):
             self.load_state_dict(torch.load(self.model_path))
 
     def forward(self, x):
-        # x1 = torch.from_numpy(x[0:3])
-        # x2 = torch.from_numpy(x[3:9])
-        # x3 = torch.from_numpy(x[9:])
-        y = torch.sigmoid(self.logistic(torch.from_numpy(x)))
-        return y
+        if x.ndim == 1:
+            x_atk = x[0:3]
+            x_cst = x[3:9]
+            x_nst = x[9:]
+        else:
+            x_atk = x[:, 0:3]
+            x_cst = x[:, 3:9]
+            x_nst = x[:, 9:]
+
+        a_atk = torch.sigmoid(self.affine_atk(x_atk))
+        a_cst = torch.sigmoid(self.affine_cst(x_cst))
+        a_nst = torch.sigmoid(self.affine_cst(x_nst))
+        a_cmp = torch.sigmoid(self.affine_cmp(torch.cat((a_cst, a_nst), dim=x.ndim-1)))
+        a_fin = torch.sigmoid(self.affine_fin(torch.cat((a_atk, a_cmp), dim=x.ndim-1)))
+        return a_fin
 
     def select_action(self, data_in: np.ndarray, sample=False):
         probs = []
         # print('-----------------------------------------')
         for x in data_in:
             with torch.no_grad():
-                y = self(x)
+                y = self(torch.from_numpy(x))
                 if sample:
                     m = torch.distributions.Bernoulli(probs=y)
-                    action = int(m.sample())
+                    if int(m.sample()) == 1:
+                        probs.append(y)
                 else:
-                    action = 1 if y > 0.5 else 0
+                    probs.append(y)
                 # print('prob: ', y)
-            if action == 1:
-                probs.append(y)
         if len(probs) == 0:
             return None
         best_attack = int(np.argmax(probs))
