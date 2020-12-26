@@ -1,3 +1,4 @@
 epochs=80
 lr=1e-4
 best acc.=79.435%
+batch_size=32

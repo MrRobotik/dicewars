@@ -146,7 +146,7 @@ def game_descriptor(board: Board, player_name: int, players: list):
                     best_border.append(area)
 
     feature_vector = [
-        max_region_size,
+        max_region_size / len(board.areas),
         rel_border_size_1,
         rel_border_size_2,
         rel_area_size,
