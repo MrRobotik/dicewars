@@ -6,31 +6,29 @@ import sys
 import copy
 
 from dicewars.ai.xkucer95.happ_model import HoldAreaProbPredictor
+from dicewars.ai.xkucer95.wpp_model import WinProbPredictor
 from dicewars.ai.xkucer95.utils import batch_provider, evaluate
+
+model_types = {'happ': HoldAreaProbPredictor, 'wpp': WinProbPredictor}
 
 
 def main():
-    epochs = 0
-    lr = 0.
-    x_trn = None
-    x_val = None
-    t_trn = None
-    t_val = None
     try:
         data_dir = sys.argv[1]
         model_name = sys.argv[2]
         epochs = int(sys.argv[3])
         lr = float(sys.argv[4])
+        batch_size = int(sys.argv[5])
         x_trn = np.loadtxt('{}/{}_x_trn.csv'.format(data_dir, model_name), delimiter=' ').astype(np.float32)
         x_val = np.loadtxt('{}/{}_x_val.csv'.format(data_dir, model_name), delimiter=' ').astype(np.float32)
         t_trn = np.loadtxt('{}/{}_t_trn.csv'.format(data_dir, model_name), delimiter=' ').astype(np.float32)
         t_val = np.loadtxt('{}/{}_t_val.csv'.format(data_dir, model_name), delimiter=' ').astype(np.float32)
     except:
+        print('usage: training.py DATA_DIR MODEL_NAME EPOCHS LR BATCH_SIZE')
         exit(1)
 
-    model = HoldAreaProbPredictor()
+    model = model_types[model_name]()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    batch_size = 32
 
     best_accuracy = 0.
     best_model = copy.deepcopy(model)
@@ -54,7 +52,6 @@ def main():
         losses.append(loss_avg)
         accuracies.append(accuracy)
         if accuracy > best_accuracy:
-            print(accuracy)
             best_accuracy = accuracy
             best_model = copy.deepcopy(model)
 
