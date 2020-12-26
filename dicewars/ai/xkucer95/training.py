@@ -45,8 +45,12 @@ def main():
             loss.backward()
             optimizer.step()
             loss_avg += float(loss) * (1/len(t))
+
         with torch.no_grad():
+            model.train(False)
             accuracy = evaluate(model, x_val, t_val)
+            model.train(True)
+
         losses.append(loss_avg)
         accuracies.append(accuracy)
         if accuracy > best_accuracy:

@@ -6,8 +6,8 @@ from os import path
 class HoldAreaProbPredictor(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.affine1 = torch.nn.Linear(5, 9, True)
-        self.affine2 = torch.nn.Linear(9, 1, True)
+        self.affine1 = torch.nn.Linear(5, 5, True)
+        self.affine2 = torch.nn.Linear(5, 1, True)
         self.model_path = 'dicewars/ai/xkucer95/models/happ_model.pt'
         if path.exists(self.model_path):
             self.load_state_dict(torch.load(self.model_path))

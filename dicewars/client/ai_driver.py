@@ -68,10 +68,10 @@ class AIDriver:
             with FixedTimer(TIME_LIMIT_CONSTRUCTOR):
                 self.ai = ai_constructor(self.player_name, board_copy, players_order_copy)
             # For xkucer95 AI policy training
-            self.game_states_buffer = deque()
-            x = [a for a in self.board.get_player_areas(self.player_name)]
-            x = {a.get_name(): area_descriptor(a, self.board) for a in x}
-            self.game.players[self.player_name].curr_areas = x
+            # self.game_states_buffer = deque()
+            # x = [a for a in self.board.get_player_areas(self.player_name)]
+            # x = {a.get_name(): area_descriptor(a, self.board) for a in x}
+            # self.game.players[self.player_name].curr_areas = x
 
         except TimeoutError:
             self.logger.error("The AI failed to construct itself in {}s. Disabling it.".format(TIME_LIMIT_CONSTRUCTOR))
@@ -155,24 +155,24 @@ class AIDriver:
                 self.game.players[def_name].set_score(msg['score'][str(def_name)])
 
                 # xkucer95 AI training
-                if self.player_name == def_name:
-                    with open('dicewars/ai/xkucer95/models/area_states.csv', 'a') as f:
-                        state = self.game.players[def_name].curr_areas[defender.get_name()]
-                        f.write('0 {}\n'.format(' '.join(list(str(x) for x in state))))
+                # if self.player_name == def_name:
+                #     with open('dicewars/ai/xkucer95/models/area_states.csv', 'a') as f:
+                #         state = self.game.players[def_name].curr_areas[defender.get_name()]
+                #         f.write('0 {}\n'.format(' '.join(list(str(x) for x in state))))
 
             self.waitingForResponse = False
 
         elif msg['type'] == 'end_turn':
 
             # xkucer95 AI training
-            if self.player_name == self.game.current_player_name:
-                state = game_descriptor(self.board, self.player_name, self.game.players_order)
-                self.game_states_buffer.append(state)
-                if len(self.game_states_buffer) > 5:  # Last 5 moves of each player...
-                    self.game_states_buffer.popleft()
-                x = [a for a in self.board.get_player_areas(self.player_name)]
-                x = {a.get_name(): area_descriptor(a, self.board) for a in x}
-                self.game.players[self.player_name].curr_areas = x
+            # if self.player_name == self.game.current_player_name:
+            #     state = game_descriptor(self.board, self.player_name, self.game.players_order)
+            #     self.game_states_buffer.append(state)
+            #     if len(self.game_states_buffer) > 5:  # Last 5 moves of each player...
+            #         self.game_states_buffer.popleft()
+            #     x = [a for a in self.board.get_player_areas(self.player_name)]
+            #     x = {a.get_name(): area_descriptor(a, self.board) for a in x}
+            #     self.game.players[self.player_name].curr_areas = x
 
             current_player = self.game.players[self.game.current_player_name]
 
@@ -189,11 +189,11 @@ class AIDriver:
             self.game.current_player = self.game.players[msg['current_player']]
 
             # xkucer95 AI training
-            if self.player_name == self.game.current_player_name:
-                for a, state in self.game.players[self.player_name].curr_areas.items():
-                    if self.player_name == self.board.get_area(a).get_owner_name():
-                        with open('dicewars/ai/xkucer95/models/area_states.csv', 'a') as f:
-                            f.write('1 {}\n'.format(' '.join(list(str(x) for x in state))))
+            # if self.player_name == self.game.current_player_name:
+            #     for a, state in self.game.players[self.player_name].curr_areas.items():
+            #         if self.player_name == self.board.get_area(a).get_owner_name():
+            #             with open('dicewars/ai/xkucer95/models/area_states.csv', 'a') as f:
+            #                 f.write('1 {}\n'.format(' '.join(list(str(x) for x in state))))
 
             self.game.players[self.game.current_player_name].activate()
             self.waitingForResponse = False
@@ -202,14 +202,14 @@ class AIDriver:
             self.logger.info("Player {} has won".format(msg['winner']))
             self.game.socket.close()
             # xkucer95 AI training
-            if self.player_name == msg['winner']:
-                with open('dicewars/ai/xkucer95/models/game_states.csv', 'a') as f:
-                    state = self.game_states_buffer.popleft()
-                    f.write('1 {}\n'.format(' '.join(list(str(x) for x in state))))
-            else:
-                with open('dicewars/ai/xkucer95/models/game_states.csv', 'a') as f:
-                    state = self.game_states_buffer.popleft()
-                    f.write('0 {}\n'.format(' '.join(list(str(x) for x in state))))
+            # if self.player_name == msg['winner']:
+            #     with open('dicewars/ai/xkucer95/models/game_states.csv', 'a') as f:
+            #         state = self.game_states_buffer.popleft()
+            #         f.write('1 {}\n'.format(' '.join(list(str(x) for x in state))))
+            # else:
+            #     with open('dicewars/ai/xkucer95/models/game_states.csv', 'a') as f:
+            #         state = self.game_states_buffer.popleft()
+            #         f.write('0 {}\n'.format(' '.join(list(str(x) for x in state))))
             return False
 
         return True

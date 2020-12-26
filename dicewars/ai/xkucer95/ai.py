@@ -18,8 +18,8 @@ class AI:
         self.player_name = player_name
         self.players_order = players_order
         self.logger = logging.getLogger('AI')
-        self.policy_model = HoldAreaProbPredictor()
-        self.policy_model.eval()
+        self.happ_model = HoldAreaProbPredictor()
+        self.happ_model.eval()
         self.actions_buffer = []
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
@@ -31,8 +31,30 @@ class AI:
     def ai_turn_policy_only(self, board):
         attacks = possible_attacks(board, self.player_name)
         attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
-        attacks = sorted(attacks, key=lambda x: x[2], reverse=True)
+        # attacks = sorted(attacks, key=lambda x: x[2], reverse=True)
         if len(attacks) == 0:
             return EndTurnCommand()
-        source, target, _ = attacks[0]
+
+        x_source = []
+        x_target = []
+        succ_probs = []
+
+        for source, target, succ_prob in attacks:
+            ts = TurnSimulator(board)
+            ts.do_attack(source, target, succ_prob, True)
+            x_source.append(area_descriptor(source, board))
+            x_target.append(area_descriptor(target, board))
+            succ_probs.append(succ_prob)
+            ts.undo_attack()
+
+        with torch.no_grad():
+            p_source = self.happ_model(torch.from_numpy(np.vstack(x_source))).detach().numpy().ravel()
+            p_target = self.happ_model(torch.from_numpy(np.vstack(x_target))).detach().numpy().ravel()
+
+        final_probs = p_source * p_target * np.asarray(succ_probs)
+        best = int(np.argmax(final_probs))
+        # print(final_probs[best])
+        if final_probs[best] < 0.10:
+            return EndTurnCommand()
+        source, target, _ = attacks[best]
         return BattleCommand(source.get_name(), target.get_name())

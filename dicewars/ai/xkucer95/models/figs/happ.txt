@@ -1,2 +1,3 @@
 epochs=80
 lr=1e-4
+best acc.=79.435%
