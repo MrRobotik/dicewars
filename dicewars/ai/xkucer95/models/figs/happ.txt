@@ -2,3 +2,8 @@ epochs=80
 lr=1e-4
 best acc.=79.435%
 batch_size=32
+
+trn_size=76000
+val_size=20000
+
+prior_zeros=50%
