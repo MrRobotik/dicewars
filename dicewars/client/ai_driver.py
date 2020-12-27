@@ -155,10 +155,10 @@ class AIDriver:
                 self.game.players[def_name].set_score(msg['score'][str(def_name)])
 
                 # xkucer95 AI training
-                if self.player_name == def_name:
-                    with open('dicewars/ai/xkucer95/models/area_states.csv', 'a') as f:
-                        state = self.game.players[def_name].curr_areas[defender.get_name()]
-                        f.write('0 {}\n'.format(' '.join(list(str(x) for x in state))))
+                # if self.player_name == def_name:
+                #     with open('dicewars/ai/xkucer95/models/area_states.csv', 'a') as f:
+                #         state = self.game.players[def_name].curr_areas[defender.get_name()]
+                #         f.write('0 {}\n'.format(' '.join(list(str(x) for x in state))))
 
             self.waitingForResponse = False
 

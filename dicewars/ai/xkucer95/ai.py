@@ -24,8 +24,8 @@ class AI:
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         try:
-            return self.ai_turn_v2(board)
-            # return self.ai_turn_v1(board)
+            # return self.ai_turn_v2(board)
+            return self.ai_turn_v1(board)
         except:
             print(traceback.format_exc())
 
