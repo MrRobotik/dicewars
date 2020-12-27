@@ -1,9 +1,9 @@
-epochs=80
+epochs=100
 lr=1e-4
-best acc.=79.435%
-batch_size=32
+best acc.=80.455%
+batch_size=64
 
-trn_size=76000
+trn_size=87194
 val_size=20000
 
 prior_zeros=50%

@@ -52,6 +52,7 @@ def main():
         losses.append(loss_avg)
         accuracies.append(accuracy)
         if accuracy > best_accuracy:
+            print(accuracy)
             best_accuracy = accuracy
             best_model = copy.deepcopy(model)
 

@@ -118,13 +118,15 @@ def area_descriptor(area: Area, board: Board):
     unique_enemies = {board.get_area(adj).get_owner_name() for adj in neighborhood}
     if player_name in unique_enemies:
         unique_enemies.remove(player_name)
+    max_region_size = max(len(r) for r in board.get_players_regions(player_name))
 
     feature_vector = [
         survival_prob(area, board),
         rel_area_power(area, board),
         len(enemy_areas),
         len(owned_areas),
-        len(unique_enemies)
+        len(unique_enemies),
+        max_region_size / len(board.areas)
     ]
     return np.asarray(feature_vector, dtype=np.float32)
 
