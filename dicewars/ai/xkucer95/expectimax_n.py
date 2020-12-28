@@ -1,27 +1,68 @@
 from .utils import *
+from .turn_simulator import TurnSimulator
 import numpy as np
 
 
-def expectimax_n(board, depth, turn, n, heuristics):
-    if board.nb_players_alive() == 1 or depth == 0:
+class Heuristics:
+    def __init__(self, eval_attacks_fn, eval_game_fn, players_order):
+        self.eval_attacks_fn = eval_attacks_fn
+        self.eval_game_fn = eval_game_fn
+        self.players_order = players_order
+
+    def get_best_attacks(self, board: Board, turn: int):
+        attacks = possible_attacks(board, self.players_order[turn])
+        attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
+        attacks = sorted(attacks, key=lambda x: x[2], reverse=True)[:8]
+        if len(attacks) > 0:
+            probs = self.eval_attacks_fn(board, attacks)
+            for i in np.argsort(-probs)[:2]:
+                yield attacks[i]
+
+    def evaluate(self, board: Board):
+        val = []
+        for player_name in self.players_order:
+            areas = board.get_player_areas(player_name)
+            if   len(areas) == len(board.areas):
+                val.append(1.)
+            elif len(areas) == 0:
+                val.append(0.)
+            else:
+                val.append(float(self.eval_game_fn(board, player_name)))
+        return np.asarray(val)
+
+
+def expectimax_n(board: Board, depth: int, turn: int, n: int, heuristics: Heuristics):
+    if depth == 0 or board.nb_players_alive() == 1:
         return heuristics.evaluate(board), None
+
     next_turn = (turn + 1) % n
     best_val = np.full(n, -np.infty)
     best_act = None
-    attacks = heuristics.best_attacks(board, turn)
-    for source, target, prob in attacks:
-        p_succ = prob
-        p_fail = 1. - prob
-        with Attack(source, target, True):
-            v_succ, _ = expectimax_n(board, depth - 1, next_turn, n, heuristics)
-        with Attack(source, target, False):
-            v_fail, _ = expectimax_n(board, depth - 1, next_turn, n, heuristics)
-        val = (p_succ * v_succ) + (p_fail * v_fail)
+    attacks = heuristics.get_best_attacks(board, turn)
+
+    for source, target, succ_prob in attacks:
+        val = expand_chances(source, target, succ_prob,
+                             board, depth - 1,
+                             next_turn, n, heuristics)
         if val[turn] > best_val[turn]:
             best_val = val
-            best_act = source.get_name(), target.get_name()
+            best_act = source, target
+
     val, _ = expectimax_n(board, depth - 1, next_turn, n, heuristics)
     if val[turn] > best_val[turn]:
         best_val = val
         best_act = None
     return best_val, best_act
+
+
+def expand_chances(source: Area, target: Area, succ_prob: float, board: Board, depth: int, *args):
+    ts = TurnSimulator(board)
+    ts.do_attack(source, target, succ_prob, True)
+    p_succ = ts.curr_prob
+    v_succ, _ = expectimax_n(board, depth, *args)
+    ts.undo_attack()
+    ts.do_attack(source, target, succ_prob, False)
+    p_fail = ts.curr_prob
+    v_fail, _ = expectimax_n(board, depth, *args)
+    ts.undo_attack()
+    return (p_succ * v_succ) + (p_fail * v_fail)

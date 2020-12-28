@@ -1,16 +1,13 @@
 import logging
-import torch
 
-from os import path
 from .utils import *
 
 from .turn_simulator import TurnSimulator
 from .happ_model import HoldAreaProbPredictor
-from .expectimax_n import expectimax_n
+from .wpp_model import WinProbPredictor
+from .expectimax_n import expectimax_n, Heuristics
 
 from dicewars.client.ai_driver import BattleCommand, EndTurnCommand
-
-import traceback  # TODO: remove after debug
 
 
 class AI:
@@ -20,14 +17,14 @@ class AI:
         self.logger = logging.getLogger('AI')
         self.happ_model = HoldAreaProbPredictor()
         self.happ_model.eval()
-        self.actions_buffer = []
+        self.wpp_model = WinProbPredictor()
+        self.wpp_model.eval()
+        self.heuristics = Heuristics(self.eval_attacks, self.eval_game, players_order)
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
-        try:
-            return self.ai_turn_v2(board)
-            # return self.ai_turn_v1(board)
-        except:
-            print(traceback.format_exc())
+        if time_left < 2.0:
+            return EndTurnCommand()
+        return self.ai_turn_v3(board)
 
     def ai_turn_v1(self, board):
         attacks = possible_attacks(board, self.player_name)
@@ -43,25 +40,32 @@ class AI:
         attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
         if len(attacks) == 0:
             return EndTurnCommand()
+        probs = self.eval_attacks(board, attacks) * np.asarray([p for _, _, p in attacks])
+        best = int(np.argmax(probs))
+        if probs[best] < 0.1:
+            return EndTurnCommand()
+        source, target, _ = attacks[best]
+        return BattleCommand(source.get_name(), target.get_name())
 
+    def ai_turn_v3(self, board):
+        turn = self.players_order.index(self.player_name)
+        _, act = expectimax_n(board, 4, turn, len(self.players_order), self.heuristics)
+        return EndTurnCommand()
+
+    def eval_attacks(self, board, attacks):
         x_source = []
         x_target = []
-        succ_probs = []
         for source, target, succ_prob in attacks:
             ts = TurnSimulator(board)
             ts.do_attack(source, target, succ_prob, True)
             x_source.append(area_descriptor(source, board))
             x_target.append(area_descriptor(target, board))
-            succ_probs.append(succ_prob)
             ts.undo_attack()
-
         with torch.no_grad():
             p_source = self.happ_model(torch.from_numpy(np.vstack(x_source))).detach().numpy().ravel()
             p_target = self.happ_model(torch.from_numpy(np.vstack(x_target))).detach().numpy().ravel()
+        return p_source * p_target
 
-        final_probs = p_source * p_target * np.asarray(succ_probs)
-        best = int(np.argmax(final_probs))
-        if final_probs[best] < 0.10:
-            return EndTurnCommand()
-        source, target, _ = attacks[best]
-        return BattleCommand(source.get_name(), target.get_name())
+    def eval_game(self, board, player_name):
+        x = game_descriptor(board, player_name, self.players_order)
+        return self.wpp_model(torch.from_numpy(x)).detach().numpy().squeeze()
