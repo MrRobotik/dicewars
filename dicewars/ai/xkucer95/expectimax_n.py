@@ -12,10 +12,11 @@ class Heuristics:
     def get_best_attacks(self, board: Board, turn: int):
         attacks = possible_attacks(board, self.players_order[turn])
         attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
-        attacks = sorted(attacks, key=lambda x: x[2], reverse=True)[:8]
         if len(attacks) > 0:
-            probs = self.eval_attacks_fn(board, attacks)
-            for i in np.argsort(-probs)[:2]:
+            attacks = sorted(attacks, key=lambda x: x[2], reverse=True)[:10]
+            probs = self.eval_attacks_fn(board, attacks) * np.asarray([p for _, _, p in attacks])
+            indices = [i for i in np.argsort(-probs) if probs[i] >= 0.1]
+            for i in indices[:3]:
                 yield attacks[i]
 
     def evaluate(self, board: Board):
