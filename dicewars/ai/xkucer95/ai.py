@@ -23,10 +23,10 @@ class AI:
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         if time_left < 2.0:
-            return EndTurnCommand()
-        return self.ai_turn_v3(board)
+            return self.ai_turn_impl_2(board)
+        return self.ai_turn_impl_3(board)
 
-    def ai_turn_v1(self, board):
+    def ai_turn_impl_1(self, board):
         attacks = possible_attacks(board, self.player_name)
         attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
         if len(attacks) == 0:
@@ -35,7 +35,7 @@ class AI:
         source, target, _ = attacks[0]
         return BattleCommand(source.get_name(), target.get_name())
 
-    def ai_turn_v2(self, board):
+    def ai_turn_impl_2(self, board):
         attacks = possible_attacks(board, self.player_name)
         attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
         if len(attacks) == 0:
@@ -47,10 +47,13 @@ class AI:
         source, target, _ = attacks[best]
         return BattleCommand(source.get_name(), target.get_name())
 
-    def ai_turn_v3(self, board):
+    def ai_turn_impl_3(self, board):
         turn = self.players_order.index(self.player_name)
-        _, act = expectimax_n(board, 4, turn, len(self.players_order), self.heuristics)
-        return EndTurnCommand()
+        val, act = expectimax_n(board, 4, turn, len(self.players_order), self.heuristics)
+        if act is None:
+            return EndTurnCommand()
+        source, target = act
+        return BattleCommand(source.get_name(), target.get_name())
 
     def eval_attacks(self, board, attacks):
         x_source = []
@@ -61,6 +64,7 @@ class AI:
             x_source.append(area_descriptor(source, board))
             x_target.append(area_descriptor(target, board))
             ts.undo_attack()
+
         with torch.no_grad():
             p_source = self.happ_model(torch.from_numpy(np.vstack(x_source))).detach().numpy().ravel()
             p_target = self.happ_model(torch.from_numpy(np.vstack(x_target))).detach().numpy().ravel()

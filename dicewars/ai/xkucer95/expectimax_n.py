@@ -48,21 +48,22 @@ def expectimax_n(board: Board, depth: int, turn: int, n: int, heuristics: Heuris
             best_val = val
             best_act = source, target
 
-    val, _ = expectimax_n(board, depth - 1, next_turn, n, heuristics)
-    if val[turn] > best_val[turn]:
-        best_val = val
-        best_act = None
+    if best_val[turn] < 0.9:
+        val, _ = expectimax_n(board, depth - 1, next_turn, n, heuristics)
+        if val[turn] > best_val[turn]:
+            best_val = val
+            best_act = None
     return best_val, best_act
 
 
-def expand_chances(source: Area, target: Area, succ_prob: float, board: Board, depth: int, *args):
+def expand_chances(source: Area, target: Area, succ_prob: float, board: Board, *args):
     ts = TurnSimulator(board)
     ts.do_attack(source, target, succ_prob, True)
     p_succ = ts.curr_prob
-    v_succ, _ = expectimax_n(board, depth, *args)
+    v_succ, _ = expectimax_n(board, *args)
     ts.undo_attack()
     ts.do_attack(source, target, succ_prob, False)
     p_fail = ts.curr_prob
-    v_fail, _ = expectimax_n(board, depth, *args)
+    v_fail, _ = expectimax_n(board, *args)
     ts.undo_attack()
     return (p_succ * v_succ) + (p_fail * v_fail)
