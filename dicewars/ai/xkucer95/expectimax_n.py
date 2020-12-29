@@ -13,10 +13,10 @@ class Heuristics:
         attacks = possible_attacks(board, self.players_order[turn])
         attacks = [(s, t, p) for s, t, p in attacks if s.get_dice() >= t.get_dice()]
         if len(attacks) > 0:
-            attacks = sorted(attacks, key=lambda x: x[2], reverse=True)[:10]
+            attacks = sorted(attacks, key=lambda x: x[2], reverse=True)[:20]
             probs = self.eval_attacks_fn(board, attacks) * np.asarray([p for _, _, p in attacks])
-            indices = [i for i in np.argsort(-probs) if probs[i] >= 0.1]
-            for i in indices[:3]:
+            indices = [i for i in np.argsort(-probs) if probs[i] > 0.1]
+            for i in indices[:2]:
                 yield attacks[i]
 
     def evaluate(self, board: Board):
