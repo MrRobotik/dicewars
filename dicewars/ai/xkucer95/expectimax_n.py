@@ -16,7 +16,7 @@ class Heuristics:
             attacks = sorted(attacks, key=lambda x: x[2], reverse=True)[:20]
             probs = self.eval_attacks_fn(board, attacks) * np.asarray([p for _, _, p in attacks])
             indices = [i for i in np.argsort(-probs) if probs[i] > 0.1]
-            for i in indices[:2]:
+            for i in indices[:4]:
                 yield attacks[i]
 
     def evaluate(self, board: Board):
@@ -49,7 +49,7 @@ def expectimax_n(board: Board, depth: int, turn: int, n: int, heuristics: Heuris
             best_val = val
             best_act = source, target
 
-    if best_val[turn] < 0.9:
+    if best_val[turn] < 0.9 and np.isneginf(best_val[turn]):
         val, _ = expectimax_n(board, depth - 1, next_turn, n, heuristics)
         if val[turn] > best_val[turn]:
             best_val = val

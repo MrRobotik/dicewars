@@ -25,7 +25,7 @@ class AI:
         if time_left < 2.0:
             print('fallback')
             return self.ai_turn_impl_2(board)
-        depth = board.nb_players_alive() * 1
+        depth = 4
         return self.ai_turn_impl_3(board, depth)
 
     def ai_turn_impl_1(self, board):
