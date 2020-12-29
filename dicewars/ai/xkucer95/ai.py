@@ -23,10 +23,8 @@ class AI:
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         if time_left < 2.0:
-            print('fallback')
             return self.ai_turn_impl_2(board)
-        depth = 4
-        return self.ai_turn_impl_3(board, depth)
+        return self.ai_turn_impl_3(board, depth=4)
 
     def ai_turn_impl_1(self, board):
         attacks = possible_attacks(board, self.player_name)
@@ -52,7 +50,9 @@ class AI:
     def ai_turn_impl_3(self, board, depth=1):
         turn = self.players_order.index(self.player_name)
         n = len(self.players_order)
-        _, act = expectimax_n(board, n, turn, depth, self.heuristics)
+        val, act = expectimax_n(board, depth, turn, n, self.heuristics)
+        # print(self.player_name)
+        # print(list(zip(self.players_order, (round(x, 4) for x in val))))
         if act is None:
             return EndTurnCommand()
         source, target = act
