@@ -16,7 +16,7 @@ class Heuristics:
             attacks = sorted(attacks, key=lambda x: x[2], reverse=True)[:20]
             probs = self.eval_attacks_fn(board, attacks) * np.asarray([p for _, _, p in attacks])
             indices = [i for i in np.argsort(-probs) if probs[i] > 0.1]
-            for i in indices[:4]:
+            for i in indices:
                 yield attacks[i]
 
     def evaluate(self, board: Board):

@@ -14,7 +14,7 @@ class TurnSimulator:
     def do_attack(self, source: Area, target: Area, succ_prob: float, succ_flag: bool):
         s_dice, s_owner = source.get_dice(), source.get_owner_name()
         t_dice, t_owner = target.get_dice(), target.get_owner_name()
-        self.stack.append((source, s_dice, s_owner, target, t_dice, t_owner, self.curr_prob, succ_flag))
+        self.stack.append((source, target, s_dice, t_dice, s_owner, t_owner, self.curr_prob, succ_flag))
         source.set_dice(1)
         if succ_flag:
             self.curr_prob *= succ_prob
@@ -24,7 +24,7 @@ class TurnSimulator:
             self.curr_prob *= 1. - succ_prob
 
     def undo_attack(self):
-        source, s_dice, s_owner, target, t_dice, t_owner, self.curr_prob, succ_flag = self.stack.pop()
+        source, target, s_dice, t_dice, s_owner, t_owner, self.curr_prob, succ_flag = self.stack.pop()
         source.set_dice(s_dice)
         if succ_flag:
             target.set_dice(t_dice)
