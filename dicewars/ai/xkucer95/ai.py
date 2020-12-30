@@ -20,7 +20,6 @@ class AI:
         self.wpp_model = WinProbPredictor()
         self.wpp_model.eval()
         self.heuristics = Heuristics(self.eval_attacks, self.eval_game, players_order, player_name)
-        self.strategy = []
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         if time_left < 2.0:
