@@ -16,10 +16,17 @@ class Heuristics:
             attacks = sorted(attacks, key=lambda x: x[2], reverse=True)[:10]
             probs = self.eval_attacks_fn(board, attacks) * np.asarray([p for _, _, p in attacks])
             indices = [i for i in np.argsort(-probs) if probs[i] > 0.1]
-            if len(indices) > 0:
-                hist = np.random.multinomial(20, probs[indices] / np.sum(probs[indices]))
-                for i in np.argwhere(hist >= np.mean(hist)).ravel():
-                    yield attacks[indices[i]]
+            for i in indices:
+                ratio = probs[i] / probs[indices[0]]
+                if ratio > 0.9:
+                    yield attacks[i]
+            # if len(indices) > 0:
+                # hist = np.random.multinomial(100, probs[indices] / np.sum(probs[indices]))
+                # print(probs[indices])
+                # print(hist)
+                # for i in np.argwhere(hist > hist[0] * 0.75).ravel():
+                # for i in np.argwhere(hist >= np.mean(hist)).ravel():
+                #     yield attacks[indices[i]]
 
     def evaluate(self, board: Board):
         val = []
@@ -42,7 +49,7 @@ def expectimax_n(board: Board, depth: int, turn: int, n: int, heuristics: Heuris
     best_val = np.full(n, -np.infty)
     best_act = None
 
-    attacks = heuristics.get_best_attacks(board, turn)
+    attacks = tuple(heuristics.get_best_attacks(board, turn))
     for source, target, succ_prob in attacks:
         val = expand_chances(source, target, succ_prob,
                              board, depth - 1,
