@@ -4,10 +4,11 @@ import numpy as np
 
 
 class Heuristics:
-    def __init__(self, eval_attacks_fn, eval_game_fn, players_order):
+    def __init__(self, eval_attacks_fn, eval_game_fn, players_order, player_name):
         self.eval_attacks_fn = eval_attacks_fn
         self.eval_game_fn = eval_game_fn
         self.players_order = players_order
+        self.player_name = player_name
 
     def get_best_attacks(self, board: Board, turn: int):
         attacks = possible_attacks(board, self.players_order[turn])
@@ -15,11 +16,17 @@ class Heuristics:
         if len(attacks) > 0:
             attacks = sorted(attacks, key=lambda x: x[2], reverse=True)[:10]
             probs = self.eval_attacks_fn(board, attacks) * np.asarray([p for _, _, p in attacks])
-            indices = [i for i in np.argsort(-probs) if probs[i] > 0.1]
-            for i in indices:
-                ratio = probs[i] / probs[indices[0]]
-                if ratio > 0.9:
-                    yield attacks[i]
+            indices = [i for i in np.argsort(-probs) if probs[i] > 0.10]
+
+            # print(probs[indices])
+            # print(np.asarray([probs[i] for i in indices if (probs[i] / probs[indices[0]]) > 0.95]))
+
+            if self.players_order[turn] == self.player_name:
+                for i in indices:
+                    if (probs[i] / probs[indices[0]]) > 0.95:
+                        yield attacks[i]
+            elif len(indices) > 0:
+                yield attacks[indices[0]]
             # if len(indices) > 0:
                 # hist = np.random.multinomial(100, probs[indices] / np.sum(probs[indices]))
                 # print(probs[indices])
@@ -49,7 +56,10 @@ def expectimax_n(board: Board, depth: int, turn: int, n: int, heuristics: Heuris
     best_val = np.full(n, -np.infty)
     best_act = None
 
-    attacks = tuple(heuristics.get_best_attacks(board, turn))
+    if (depth - 1) % 2 != 0:
+        next_turn = turn
+
+    attacks = heuristics.get_best_attacks(board, turn)
     for source, target, succ_prob in attacks:
         val = expand_chances(source, target, succ_prob,
                              board, depth - 1,
@@ -58,7 +68,7 @@ def expectimax_n(board: Board, depth: int, turn: int, n: int, heuristics: Heuris
             best_val = val
             best_act = source, target
 
-    if best_val[turn] < 0.9 and np.isneginf(best_val[turn]):
+    if best_val[turn] < 0.90 and np.isneginf(best_val[turn]):
         val, _ = expectimax_n(board, depth - 1, next_turn, n, heuristics)
         if val[turn] > best_val[turn]:
             best_val = val

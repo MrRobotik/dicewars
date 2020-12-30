@@ -19,12 +19,13 @@ class AI:
         self.happ_model.eval()
         self.wpp_model = WinProbPredictor()
         self.wpp_model.eval()
-        self.heuristics = Heuristics(self.eval_attacks, self.eval_game, players_order)
+        self.heuristics = Heuristics(self.eval_attacks, self.eval_game, players_order, player_name)
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         if time_left < 2.0:
+            print('fallback')
             return self.ai_turn_impl_2(board)
-        return self.ai_turn_impl_3(board, depth=4)
+        return self.ai_turn_impl_3(board, depth=8)
 
     def ai_turn_impl_1(self, board):
         attacks = possible_attacks(board, self.player_name)
@@ -42,7 +43,7 @@ class AI:
             return EndTurnCommand()
         probs = self.eval_attacks(board, attacks) * np.asarray([p for _, _, p in attacks])
         best = int(np.argmax(probs))
-        if probs[best] > 0.1:
+        if probs[best] > 0.10:
             source, target, _ = attacks[best]
             return BattleCommand(source.get_name(), target.get_name())
         return EndTurnCommand()
