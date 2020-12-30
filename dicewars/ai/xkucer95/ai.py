@@ -20,12 +20,15 @@ class AI:
         self.wpp_model = WinProbPredictor()
         self.wpp_model.eval()
         self.heuristics = Heuristics(self.eval_attacks, self.eval_game, players_order, player_name)
+        self.strategy = []
 
     def ai_turn(self, board, nb_moves_this_turn, nb_turns_this_game, time_left):
         if time_left < 2.0:
-            print('fallback')
+            self.strategy.clear()
             return self.ai_turn_impl_2(board)
-        return self.ai_turn_impl_3(board, depth=8)
+        else:
+            depth = 6 + (2 if time_left < 6.0 else 4)
+            return self.ai_turn_impl_3(board, depth=depth)
 
     def ai_turn_impl_1(self, board):
         attacks = possible_attacks(board, self.player_name)
@@ -51,9 +54,7 @@ class AI:
     def ai_turn_impl_3(self, board, depth=1):
         turn = self.players_order.index(self.player_name)
         n = len(self.players_order)
-        val, act = expectimax_n(board, depth, turn, n, self.heuristics)
-        # print(self.player_name)
-        # print(list(zip(self.players_order, (round(x, 4) for x in val))))
+        _, act = expectimax_n(board, depth, turn, n, self.heuristics)
         if act is None:
             return EndTurnCommand()
         source, target = act

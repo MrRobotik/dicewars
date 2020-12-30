@@ -4,11 +4,14 @@ import numpy as np
 
 
 class Heuristics:
-    def __init__(self, eval_attacks_fn, eval_game_fn, players_order, player_name):
+    def __init__(self, eval_attacks_fn, eval_game_fn, players_order, root_player):
         self.eval_attacks_fn = eval_attacks_fn
         self.eval_game_fn = eval_game_fn
         self.players_order = players_order
-        self.player_name = player_name
+        self.root_player = root_player
+
+    def is_root_player_turn(self, turn: int):
+        return self.players_order[turn] == self.root_player
 
     def get_best_attacks(self, board: Board, turn: int):
         attacks = possible_attacks(board, self.players_order[turn])
@@ -17,23 +20,12 @@ class Heuristics:
             attacks = sorted(attacks, key=lambda x: x[2], reverse=True)[:10]
             probs = self.eval_attacks_fn(board, attacks) * np.asarray([p for _, _, p in attacks])
             indices = [i for i in np.argsort(-probs) if probs[i] > 0.10]
-
-            # print(probs[indices])
-            # print(np.asarray([probs[i] for i in indices if (probs[i] / probs[indices[0]]) > 0.95]))
-
-            if self.players_order[turn] == self.player_name:
+            if self.is_root_player_turn(turn):
                 for i in indices:
                     if (probs[i] / probs[indices[0]]) > 0.95:
                         yield attacks[i]
             elif len(indices) > 0:
                 yield attacks[indices[0]]
-            # if len(indices) > 0:
-                # hist = np.random.multinomial(100, probs[indices] / np.sum(probs[indices]))
-                # print(probs[indices])
-                # print(hist)
-                # for i in np.argwhere(hist > hist[0] * 0.75).ravel():
-                # for i in np.argwhere(hist >= np.mean(hist)).ravel():
-                #     yield attacks[indices[i]]
 
     def evaluate(self, board: Board):
         val = []
@@ -52,14 +44,20 @@ def expectimax_n(board: Board, depth: int, turn: int, n: int, heuristics: Heuris
     if depth == 0 or board.nb_players_alive() == 1:
         return heuristics.evaluate(board), None
 
-    next_turn = (turn + 1) % n
+    next_turn = (turn + 1) % n if (depth - 1) % 2 == 0 else turn
     best_val = np.full(n, -np.infty)
     best_act = None
 
-    if (depth - 1) % 2 != 0:
+    if depth > 7:
         next_turn = turn
 
-    attacks = heuristics.get_best_attacks(board, turn)
+    attacks = tuple(heuristics.get_best_attacks(board, turn))
+    if depth == 10 and len(attacks) < 2:
+        if len(attacks) > 0:
+            source, target, _ = attacks[0]
+            best_act = source, target
+        return None, best_act
+
     for source, target, succ_prob in attacks:
         val = expand_chances(source, target, succ_prob,
                              board, depth - 1,
