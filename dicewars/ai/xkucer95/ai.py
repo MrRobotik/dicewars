@@ -26,7 +26,8 @@ class AI:
             self.strategy.clear()
             return self.ai_turn_impl_2(board)
         else:
-            depth = 6 + (2 if time_left < 6.0 else 4)
+            other_turns = 2*len(self.players_order) - 2
+            depth = other_turns + (2 if time_left < 6.0 else 4)
             return self.ai_turn_impl_3(board, depth=depth)
 
     def ai_turn_impl_1(self, board):
