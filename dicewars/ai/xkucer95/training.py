@@ -38,6 +38,7 @@ def main():
     for epoch in range(epochs):
         loss_avg = 0.
         for x, t in batch_provider(x_trn, t_trn, batch_size):
+            optimizer.zero_grad()
             y = model(x)
             loss = torch.nn.functional.binary_cross_entropy(y, t)
             loss.backward()
